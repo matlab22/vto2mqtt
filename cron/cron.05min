@@ -1,0 +1,27 @@
+#!/bin/bash
+
+PLUGINNAME=REPLACELBPPLUGINDIR
+PATH="/sbin:/bin:/usr/sbin:/usr/bin:$LBHOMEDIR/bin:$LBHOMEDIR/sbin"
+
+ENVIRONMENT=$(cat /etc/environment)
+export $ENVIRONMENT
+
+# Logfile
+. $LBHOMEDIR/libs/bashlib/loxberry_log.sh
+PACKAGE=${PLUGINNAME}
+NAME=${PLUGINNAME}_cron
+LOGDIR=$LBPLOG/${PLUGINNAME}
+
+if [ "$(pgrep -f "$LBHOMEDIR/bin/plugins/${PLUGINNAME}/DahuaVTO.py")" ]; then
+	exit 0
+else
+	LOGSTART "cron"
+	sleep 1
+	if [ ! "$(pgrep -f "$LBHOMEDIR/bin/plugins/${PLUGINNAME}/DahuaVTO.py")" ]; then
+		LOGERR "DahuaVTO.py isn't running - restart!"
+		$LBHOMEDIR/bin/plugins/${PLUGINNAME}/wrapper.sh start
+		LOGEND "cron"
+		exit 0
+	fi
+fi
+exit 0

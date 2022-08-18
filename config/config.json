@@ -1,0 +1,34 @@
+{
+   "dahuaConfigData" : {
+      "host" : {
+         "ip" : "",
+         "username" : "",
+         "password" : ""
+      }
+   },
+   "mqttConfigData" : {
+      "server" : {
+         "ip" : "",
+         "port" : "",
+         "brokerauth" : "0",
+         "username" : "",
+         "password" : ""
+      },
+      "client" : {
+         "id" : "DahuaVTO2MQTT",
+         "topic_prefix" : "DahuaVTO"
+      }   
+   },
+   "snapshotConfigData" : {
+      "camConfigData" : {
+         "user_name" : [""],
+         "user_pwd" : [""],
+         "url" : [""]
+      },
+      "snapshotTopicSuffix" : {
+         "topic_suffix" : [""],
+         "filename" : [""],
+         "path" : "/webfrontend/html/plugins/vto2mqtt/snapshot/"
+      }   
+   }
+}
