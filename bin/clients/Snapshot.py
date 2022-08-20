@@ -43,7 +43,7 @@ class Snapshot():
                 self.filename =  snapshotConfigData['snapshotTopicSuffix']['filename']
                 self.path =  snapshotConfigData['snapshotTopicSuffix']['path']
 
-                _LOGGER.debug(f"Username ({self.user_name}), Password({self.user_pwd}), User (url{self.url})")
+                #_LOGGER.debug(f"Username ({self.user_name}), Password({self.user_pwd}), User (url{self.url})")
 
         except Exception as e:
             _LOGGER.exception(str(e))
@@ -148,5 +148,6 @@ class Snapshot():
 ## test class
 #_snap = Snapshot("/opt/loxberry/config/plugins/vto2mqtt/config.json")
 #_snap.get_snapshot(current_topic_suffix="AccessControl/Event")
-#_snap.get_snapshot(current_topic_suffix="Invite/Event")
+# _snap.get_snapshot(current_topic_suffix="Invite/Eventc")
+# _snap.get_snapshot(current_topic_suffix="ProfileAlarmTransmit")
 
