@@ -44,6 +44,31 @@
 		position	:relative;
 		margin-left	:10px;
 	}
+	.ipcam_snapshot-item 
+	{	
+		/* display: grid;
+		/* grid-template-columns: 400px repeat(10, 1fr); */
+		/* grid-template-columns: 400px 400px; */
+		/* grid-auto-rows: minmax(100px, auto); */
+		/* grid-template-rows: repeat(8, 5vw); */
+		/* grid-gap: 15px; */
+		border: 1px solid grey;
+	}
+	.ipcam_snapshot-row {
+		display: -ms-flexbox; /* IE10 */
+		display: flex;
+		-ms-flex-wrap: wrap; /* IE10 */
+		flex-wrap: wrap;
+		padding: 0 4px;
+	}
+
+		/* Create four equal columns that sits next to each other */
+	.ipcam_snapshot-column {
+		min-width	:450px;
+		width		:450px;
+		max-width	:450px;
+		padding: 0px 4px;
+	}
 	.mqtttable {
 		vertical-align: middle;
 		text-align: left;
@@ -195,7 +220,7 @@
 			</div>
 			<div	class="lb_flex-item-spacer"></div>
 			<div	class="lb_flex-item-help hint">
-				<TMPL_VAR IPCAM.HINT_IPCAM_PASSWORD>>
+				<TMPL_VAR IPCAM.HINT_IPCAM_PASSWORD>
 			</div>
 			<div	class="lb_flex-item-spacer"></div>
 		</div>
@@ -211,7 +236,7 @@
 			</div>
 			<div	class="lb_flex-item-spacer"></div>
 			<div	class="lb_flex-item-help hint">
-				<TMPL_VAR IPCAM.HINT_SNAPSHOT_PATH>>
+				<TMPL_VAR IPCAM.HINT_SNAPSHOT_PATH>
 			</div>
 			<div	class="lb_flex-item-spacer"></div>
 		</div>
@@ -227,7 +252,7 @@
 			</div>
 			<div	class="lb_flex-item-spacer"></div>
 			<div	class="lb_flex-item-help hint">
-				<TMPL_VAR IPCAM.HINT_SNAPSHOT_FILENAME>>
+				<TMPL_VAR IPCAM.HINT_SNAPSHOT_FILENAME>
 			</div>
 			<div	class="lb_flex-item-spacer"></div>
 		</div>
@@ -243,7 +268,7 @@
 			</div>
 			<div	class="lb_flex-item-spacer"></div>
 			<div	class="lb_flex-item-help hint">
-				<TMPL_VAR IPCAM.HINT_SNAPSHOT_TOPIC>>
+				<TMPL_VAR IPCAM.HINT_SNAPSHOT_TOPIC>
 			</div>
 			<div	class="lb_flex-item-spacer"></div>
 		</div>
@@ -266,23 +291,38 @@
 		</div>
 
 		<div class="lb_flex-container IPCAM">
-			<div	class="lb_flex-item-label">
-				<span id="snapshot_image_unlock"></span>
+			<div	class="ipcam_snapshot-item"></div>
+				<div	class="ipcam_snapshot-row">
+					<div	class="ipcam_snapshot-column">
+						<span id="snapshot_caption_1"></span>
+						<span id="snapshot_1"></span>
+						<span id="snapshot_arch_1"></span>
+					</div>
+					<div	class="ipcam_snapshot-column">
+						<span id="snapshot_caption_2"></span>
+						<span id="snapshot_2"></span>
+						<span id="snapshot_arch_2"></span>
+					</div>
+					<div	class="ipcam_snapshot-column">
+						<span id="snapshot_caption_3"></span>
+						<span id="snapshot_3"></span>
+						<span id="snapshot_arch_3"></span>
+					</div>
+					<div	class="ipcam_snapshot-column">
+						<span id="snapshot_caption_4"></span>
+						<span id="snapshot_4"></span>
+						<span id="snapshot_arch_4"></span>
+					</div>
+					<div	class="ipcam_snapshot-column">
+						<span id="snapshot_caption_5"></span>
+						<span id="snapshot_5"></span>
+						<span id="snapshot_arch_5"></span>
+					</div>
 			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item">
-				<span id="snapshot_image"></span>
-			<div class="hint" id="ipcam_hint">&nbsp;</div>
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item-help hint">
-				<span id="snapshot_image_tamper"></span>
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
 		</div>
-		
+
 		</form>
-			
+
 	</div>
 	
 </TMPL_IF>
@@ -497,18 +537,37 @@ $(function() {
 	$("#mqtt_onverviewlink").html('<a href="http://'+window.location.host+'/admin/plugins/mqttgateway/index.cgi?form=topics" target="_blank"><TMPL_VAR MQTT.LABEL_MQTT_GATEWAY_LINK></a>');
 	// </TMPL_IF>
 
+
 	// Get Images for IPCAM snapshots
-	var snapshot_url = 'http://'+window.location.host+'/plugins/vto2mqtt/snapshot/';
+	const snapshots = $('#snapshot_filename').val().split(",");
+	var snapshot_url = '/plugins/vto2mqtt/snapshot/'
+	var fileextension = ".jpg";
+	//console.info({snapshot_url});
+	function add_snapshots(name, index) {
+		$(document).ready(function(){
+				$.ajax({
+					url: snapshot_url,
+					success: function (data) {
+						$(data).find("a:contains(" + fileextension + "):contains("+name+")").each(function () {
+							var filename = this.href
+							filename= filename.replace(window.location.host, "").replace('/admin/plugins/vto2mqtt/', "").replace("http://", "");
+							img_element = 	'<a href='+snapshot_url+filename+'><img src="'+ snapshot_url + filename + '"alt="'+filename+'"width=400px height=450px ></a>';	
+							if (snapshots.includes(filename.replace(fileextension,""))) {
+								console.info(window.location.host+snapshot_url+filename);
+								$('#snapshot_caption_'+`${index + 1}`).append(filename);			
+								$('#snapshot_'+`${index + 1}`).append(img_element);
 
-	var snapshot= 'unlock_snapshot.jpg';
-	$("#snapshot_image_unlock").html('<a href='+snapshot_url+snapshot+' target"_blank"><img src="'+snapshot_url+snapshot+'" alt='+snapshot+' style="width:320px;height:360px;""></a>');
+							} else {
+								$('#snapshot_arch_'+`${index + 1}`).prepend(img_element);
+							}
+						});
+					}
+				});
+		});
+		;}
 
-	var snapshot= 'snapshot.jpg';
-	$("#snapshot_image").html('<a href='+snapshot_url+snapshot+' target"_blank"><img src="'+snapshot_url+snapshot+'" alt='+snapshot+' style="width:320px;height:360px;""></a>');
-
-	var snapshot= 'tamper_snapshot.jpg';
-	$("#snapshot_image_tamper").html('<a href='+snapshot_url+snapshot+' target"_blank"><img src="'+snapshot_url+snapshot+'" alt='+snapshot+' style="width:320px;height:360px;""></a>')
-
+	
+	snapshots.forEach((name, index) => add_snapshots(name, index));
 });
 
 // Save MQTT Settings
