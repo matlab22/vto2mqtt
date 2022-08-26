@@ -121,10 +121,10 @@ class Snapshot():
 
             if img_count>1:
                 new_image=self.get_merged_image(img)
+                self.backup_old_and_save_new_image(img=new_image,snapshot_name=snapshot_name,keep_count=10)
             else:
                 new_image=img[0]
 
-            self.backup_old_and_save_new_image(img=new_image,snapshot_name=snapshot_name,keep_count=5)
 
         except Exception as ex:
             exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -143,11 +143,17 @@ class Snapshot():
             exc_type, exc_obj, exc_tb = sys.exc_info()
 
             _LOGGER.error(f"Failed to get snapshot, error: {ex}, Line: {exc_tb.tb_lineno}")
+    
+    def test_snapshots(self):
+        response="Test failed: Check the log file"
+        try:
+            for current_topic_suffix in self.topic_suffix:
+                self.get_snapshot(current_topic_suffix=current_topic_suffix)
+            response="Test succeed: Check the snapshots in the snapshot folder"
 
+        except Exception as ex:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
 
-## test class
-#_snap = Snapshot("/opt/loxberry/config/plugins/vto2mqtt/config.json")
-#_snap.get_snapshot(current_topic_suffix="AccessControl/Event")
-# _snap.get_snapshot(current_topic_suffix="Invite/Eventc")
-# _snap.get_snapshot(current_topic_suffix="ProfileAlarmTransmit")
+            _LOGGER.error(f"Failed to test snapshots, error: {ex}, Line: {exc_tb.tb_lineno}")
 
+        return response
