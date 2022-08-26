@@ -244,6 +244,23 @@
 		<div class="lb_flex-container IPCAM ui-state-disabled">
 			<div	class="lb_flex-item-label">
 				<label	class=	"control-label"
+					for="snapshot_keep_count"><TMPL_VAR IPCAM.LABEL_SNAPSHOT_KEEP_COUNT></label>
+			</div>
+			<div	class="lb_flex-item-spacer"></div>
+			<div	class="lb_flex-item">
+				<input width="100%" value="" id="snapshot_keep_count" name="snapshot_keep_count" type="text" class="textfield"
+				data-validation-rule="special:number-min-max-value:1:15" data-validation-error-msg="<TMPL_VAR IPCAM.MSG_VALINVALID_BROKERPORT>">
+			</div>
+			<div	class="lb_flex-item-spacer"></div>
+			<div	class="lb_flex-item-help hint">
+				<TMPL_VAR IPCAM.HINT_SNAPSHOT_KEEP_COUNT>
+			</div>
+			<div	class="lb_flex-item-spacer"></div>
+		</div>
+
+		<div class="lb_flex-container IPCAM ui-state-disabled">
+			<div	class="lb_flex-item-label">
+				<label	class=	"control-label"
 					for="snapshot_filename"><TMPL_VAR IPCAM.LABEL_SNAPSHOT_FILENAME></label>
 			</div>
 			<div	class="lb_flex-item-spacer"></div>
@@ -644,7 +661,7 @@ function savedahua() {
 // Save IPCAM Settings
 function saveipcam() {
 	$("#ipcam_hint").attr("style", "color:blue").html("<TMPL_VAR IPCAM.HINT_SAVE_SAVING>");
-	console.log ("Saving", $('#ipcam_url').val(), $('#ipcam_username').val(),$('#ipcam_password').val(),$('#snapshot_topic_suffix').val(),$('#snapshot_filename').val(),$('#snapshot_path').val());
+	console.log ("Saving", $('#ipcam_url').val(), $('#ipcam_username').val(),$('#ipcam_password').val(),$('#snapshot_topic_suffix').val(),$('#snapshot_filename').val(),$('#snapshot_path').val(),$('#snapshot_keep_count').val());
 	$.ajax( { 
 			type: 'POST',
 			data: { 
@@ -654,7 +671,8 @@ function saveipcam() {
 				ipcam_password: $('#ipcam_password').val(),
 				snapshot_topic_suffix: $('#snapshot_topic_suffix').val(),
 				snapshot_filename: $('#snapshot_filename').val(),    
-				snapshot_path: $('#snapshot_path').val(),    
+				snapshot_path: $('#snapshot_path').val(),
+				snapshot_keep_count: $('#snapshot_keep_count').val(),   
 				secpin: secpin
 			}
 		} )
@@ -896,6 +914,11 @@ function getconfig() {
 					$("#snapshot_path").val(data.snapshotConfigData.snapshotTopicSuffix.path);
 				} else {
 					$("#snapshot_path").val('');
+				}
+				if(data.snapshotConfigData.snapshotTopicSuffix.keep_count) {
+					$("#snapshot_keep_count").val(data.snapshotConfigData.snapshotTopicSuffix.keep_count);
+				} else {
+					$("#snapshot_keep_count").val('');
 				}
 				$(".IPCAM").removeClass("ui-state-disabled");
 			};

@@ -28,6 +28,7 @@
       "snapshotTopicSuffix" : {
          "topic_suffix" : [""],
          "filename" : [""],
+         "keep_count" : "10",
          "path" : "/webfrontend/html/plugins/vto2mqtt/snapshot/"
       }   
    }

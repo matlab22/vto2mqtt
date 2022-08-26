@@ -26,7 +26,7 @@ class Snapshot():
     topic_suffix=[str]
     filename=[str]
     path=str
-
+    keep_count=int
 
     def __init__(self,configfile):
         self.configfile=configfile
@@ -42,6 +42,7 @@ class Snapshot():
                 self.topic_suffix =  snapshotConfigData['snapshotTopicSuffix']['topic_suffix']
                 self.filename =  snapshotConfigData['snapshotTopicSuffix']['filename']
                 self.path =  snapshotConfigData['snapshotTopicSuffix']['path']
+                self.keep_count =  int(snapshotConfigData['snapshotTopicSuffix']['keep_count'])
 
                 #_LOGGER.debug(f"Username ({self.user_name}), Password({self.user_pwd}), User (url{self.url})")
 
@@ -103,7 +104,9 @@ class Snapshot():
             img.save(img_file,"JPEG")
 
             if num_snapshots >= keep_count:
-                os.remove(path+sorted(snapshots)[1])
+                for n in range(1,num_snapshots-keep_count+2):
+                    os.remove(path+sorted(snapshots)[n])
+
 
         except Exception as ex:
             exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -121,7 +124,7 @@ class Snapshot():
 
             if img_count>1:
                 new_image=self.get_merged_image(img)
-                self.backup_old_and_save_new_image(img=new_image,snapshot_name=snapshot_name,keep_count=10)
+                self.backup_old_and_save_new_image(img=new_image,snapshot_name=snapshot_name,keep_count=self.keep_count)
             else:
                 new_image=img[0]
 

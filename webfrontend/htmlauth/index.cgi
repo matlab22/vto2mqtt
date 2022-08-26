@@ -399,6 +399,7 @@ sub saveipcam
 	my @values=split(',',$q->{'snapshot_filename'});
 	$cfg->{snapshotConfigData}->{snapshotTopicSuffix}->{filename} = \@values;
 	$cfg->{snapshotConfigData}->{snapshotTopicSuffix}->{path} = $q->{snapshot_path};
+	$cfg->{snapshotConfigData}->{snapshotTopicSuffix}->{keep_count} = $q->{snapshot_keep_count};
 
 	$jsonobj->write();
 	system("$lbpbindir/wrapper.sh restart"); #restarts plugin
