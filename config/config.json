@@ -7,17 +7,10 @@
       }
    },
    "mqttConfigData" : {
-      "server" : {
-         "ip" : "",
-         "port" : "",
-         "brokerauth" : "0",
-         "username" : "",
-         "password" : ""
-      },
       "client" : {
          "id" : "DahuaVTO2MQTT",
          "topic_prefix" : "DahuaVTO"
-      }   
+      }
    },
    "snapshotConfigData" : {
       "camConfigData" : {
@@ -30,6 +23,6 @@
          "filename" : [""],
          "keep_count" : "10",
          "path" : "/webfrontend/html/plugins/vto2mqtt/snapshot/"
-      }   
+      }
    }
 }
