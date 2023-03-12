@@ -10,6 +10,14 @@
       "client" : {
          "id" : "DahuaVTO2MQTT",
          "topic_prefix" : "DahuaVTO"
+      },
+      "server" : {
+         "brokerauth" : "1",
+         "ip" : "localhost",
+         "password" : "",
+         "port" : "1883",
+         "usemqttgateway" : "false",
+         "username" : "loxberry"
       }
    },
    "snapshotConfigData" : {
