@@ -81,13 +81,19 @@ class DahuaAPI(asyncio.Protocol):
 
     def data_received(self, data):
         try:
-            message = self.parse_response(data)
-            _LOGGER.debug(f"Data received: {message}")
+            _LOGGER.debug(f"Received data, Raw Data: {data}")
+            messages = self.parse_data(data)
 
-            message_id = message.get("id")
+            for message_data in messages:
+                message = self.parse_message(message_data)
 
-            handler: Callable = self.data_handlers.get(message_id, self.handle_default)
-            handler(message)
+                if message is not None:
+                    _LOGGER.debug(f"Handling message: {message}")
+
+                    message_id = message.get("id")
+
+                    handler: Callable = self.data_handlers.get(message_id, self.handle_default)
+                    handler(message)
 
         except Exception as ex:
             exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -393,24 +399,39 @@ class DahuaAPI(asyncio.Protocol):
         self.outgoing_events.put(event_data)
 
     @staticmethod
-    def parse_response(response):
+    def parse_data(data):
+        _LOGGER.debug(f"Parsing data, Content: {data}")
+
+        data_items = bytearray()
+
+        for data_item in data:
+            data_item_char = chr(data_item)
+            parsed_char = ascii(data_item_char).replace("'", "")
+            is_valid = data_item_char == parsed_char or data_item_char in ['\n', '\'']
+
+            if is_valid:
+                data_items.append(data_item)
+
+        messages = data_items.decode("unicode-escape").split("\n")
+        _LOGGER.debug(f"Data cleaned up, Messages: {messages}")
+
+        return messages
+
+    @staticmethod
+    def parse_message(message_data):
         result = None
 
         try:
-            response_parts = str(response).split("\\x00")
-            for response_part in response_parts:
-                if response_part.startswith("{"):
-                    if response_part[1]=='"':
-                        end = response_part.rindex("}") + 1
-                        message = response_part[0:end]
-                        message = message.replace("parse_response(response)","") #to recover boken messages
-                        print(message)
-                        result = json.loads(message)
+            if message_data is not None and "{" in message_data:
+                first_char = message_data.index("{")
+                message = message_data[first_char:]
+
+                result = json.loads(message)
 
         except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
 
-            _LOGGER.error(f"Failed to read data: {response}, error: {e}, Line: {exc_tb.tb_lineno}")
+            _LOGGER.error(f"Failed to read data: {message_data}, error: {e}, Line: {exc_tb.tb_lineno}")
 
         return result
 
