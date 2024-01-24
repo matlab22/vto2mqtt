@@ -18,6 +18,9 @@
          "port" : "1883",
          "usemqttgateway" : "false",
          "username" : "loxberry"
+      },
+      "logger" : {
+         "EXPORTER_PORT'" : "9563"
       }
    },
    "snapshotConfigData" : {

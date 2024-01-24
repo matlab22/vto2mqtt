@@ -14,9 +14,9 @@ class DahuaConfigurationData:
     password: Optional[str]
     is_ssl: Optional[bool]
     auth: Optional[HTTPDigestAuth]
-    configfile: Optional[str]
 
-    def __init__(self, configfile):
+
+    def __init__(self, configfile: str):
         self.configfile=configfile
         try:
             with open(self.configfile) as json_pcfg_file:

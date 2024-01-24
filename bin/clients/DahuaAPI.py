@@ -1,6 +1,4 @@
-
 import asyncio
-import hashlib
 import json
 import logging
 import queue
@@ -12,6 +10,7 @@ from typing import Optional, Dict, Any, Callable
 import requests
 
 from common.consts import *
+from common.utils import parse_data, parse_message, get_hashed_password
 from models.DahuaConfigData import DahuaConfigurationData
 
 _LOGGER = logging.getLogger(__name__)
@@ -31,7 +30,13 @@ class DahuaAPI(asyncio.Protocol):
     data_handlers: Dict[Any, Callable[[Any, str], None]]
     event_handlers: Dict[str, Callable[[dict], None]]
 
-    def __init__(self, outgoing_events: queue.Queue, dahua_config: DahuaConfigurationData, set_api):
+    def __init__(self,
+                 outgoing_events: queue.Queue,
+                 dahua_config: DahuaConfigurationData,
+                 set_api,
+                 set_status,
+                 set_message_metrics):
+
         self.dahua_config = dahua_config
         self.dahua_details = {}
 
@@ -51,6 +56,8 @@ class DahuaAPI(asyncio.Protocol):
 
         self._loop = asyncio.get_event_loop()
         self.outgoing_events = outgoing_events
+        self._set_status = set_status
+        self._set_message_metrics = set_message_metrics
 
         set_api(self)
 
@@ -82,10 +89,10 @@ class DahuaAPI(asyncio.Protocol):
     def data_received(self, data):
         try:
             _LOGGER.debug(f"Received data, Raw Data: {data}")
-            messages = self.parse_data(data)
+            messages = parse_data(data)
 
             for message_data in messages:
-                message = self.parse_message(message_data)
+                message = parse_message(message_data)
 
                 if message is not None:
                     _LOGGER.debug(f"Handling message: {message}")
@@ -98,7 +105,14 @@ class DahuaAPI(asyncio.Protocol):
         except Exception as ex:
             exc_type, exc_obj, exc_tb = sys.exc_info()
 
-            _LOGGER.error(f"Failed to handle message, error: {ex}, Line: {exc_tb.tb_lineno}")
+            _LOGGER.error(
+                f"Failed to handle message, "
+                f"Data: {data}, "
+                f"Error: {ex}, "
+                f"Line: {exc_tb.tb_lineno}"
+            )
+
+            self._set_message_metrics(METRIC_DAHUA_FAILED_MESSAGES, [self.sessionId, "incoming"])
 
     def handle_notify_event_stream(self, params):
         try:
@@ -149,6 +163,8 @@ class DahuaAPI(asyncio.Protocol):
             "method": action,
             "params": params
         }
+
+        self._set_message_metrics(METRIC_DAHUA_MESSAGES, [self.sessionId, action])
 
         self.data_handlers[self.request_id] = handler
 
@@ -208,6 +224,8 @@ class DahuaAPI(asyncio.Protocol):
             keep_alive_interval = params.get("keepAliveInterval")
 
             if keep_alive_interval is not None:
+                self._set_status(True)
+
                 self.keep_alive_interval = keep_alive_interval - 5
 
                 self.load_access_control()
@@ -218,7 +236,7 @@ class DahuaAPI(asyncio.Protocol):
 
                 Timer(self.keep_alive_interval, self.keep_alive).start()
 
-        password = self._get_hashed_password(
+        password = get_hashed_password(
             self.random,
             self.realm,
             self.dahua_config.username,
@@ -397,52 +415,3 @@ class DahuaAPI(asyncio.Protocol):
         }
 
         self.outgoing_events.put(event_data)
-
-    @staticmethod
-    def parse_data(data):
-        _LOGGER.debug(f"Parsing data, Content: {data}")
-
-        data_items = bytearray()
-
-        for data_item in data:
-            data_item_char = chr(data_item)
-            parsed_char = ascii(data_item_char).replace("'", "")
-            is_valid = data_item_char == parsed_char or data_item_char in ['\n', '\'']
-
-            if is_valid:
-                data_items.append(data_item)
-
-        messages = data_items.decode("unicode-escape").split("\n")
-        _LOGGER.debug(f"Data cleaned up, Messages: {messages}")
-
-        return messages
-
-    @staticmethod
-    def parse_message(message_data):
-        result = None
-
-        try:
-            if message_data is not None and "{" in message_data:
-                first_char = message_data.index("{")
-                message = message_data[first_char:]
-
-                result = json.loads(message)
-
-        except Exception as e:
-            exc_type, exc_obj, exc_tb = sys.exc_info()
-
-            _LOGGER.error(f"Failed to read data: {message_data}, error: {e}, Line: {exc_tb.tb_lineno}")
-
-        return result
-
-    @staticmethod
-    def _get_hashed_password(random, realm, username, password):
-        password_str = f"{username}:{realm}:{password}"
-        password_bytes = password_str.encode('utf-8')
-        password_hash = hashlib.md5(password_bytes).hexdigest().upper()
-
-        random_str = f"{username}:{random}:{password_hash}"
-        random_bytes = random_str.encode('utf-8')
-        random_hash = hashlib.md5(random_bytes).hexdigest().upper()
-
-        return random_hash

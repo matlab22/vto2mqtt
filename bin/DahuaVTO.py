@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import json
 import os
 import sys
 import logging
@@ -11,6 +11,7 @@ from time import sleep
 
 from clients.DahuaClient import DahuaClient
 from clients.MQTTClient import MQTTClient
+from prometheus_client import start_http_server, CollectorRegistry
 
 # ======================
 ##
@@ -72,7 +73,7 @@ def setup_logger(name):
 
     return logger
 
-_LOGGER = setup_logger("VTO2MQTT")
+_LOGGER = setup_logger(__name__)
 _LOGGER.debug("logfile: " + logfileArg)
 _LOGGER.info("loglevel: " + logging.getLevelName(_LOGGER.level))
 
@@ -87,15 +88,31 @@ class DahuaVTOManager:
                 # configure host ip
                 self.host = str(dahuaConfigData['host']['ip'])
                 _LOGGER.debug(f"Host IP: {self.host}")
+                mqttConfigData = pcfg['mqttConfigData']
+                self.exporter_port = int(mqttConfigData['logger']['EXPORTER_PORT'])
+                _LOGGER.debug(f"EXPORTER_PORT: {self.exporter_port}")
 
         except Exception as e:
             _LOGGER.exception(str(e))
-        self._mqtt_client = MQTTClient(configfile)
-        self._dahua_client = DahuaClient(configfile)
+        
+        with open("version.json", "r") as file:
+            version_data = json.load(file)
+            version = version_data.get("version")
+
+        _LOGGER.info(f"Starting DahuaVTO2MQTT, Version: {version}")
+
+        self.registry = CollectorRegistry()
+
+        self._mqtt_client = MQTTClient(version, self.registry,configfile)
+        self._dahua_client = DahuaClient(version, self.registry,configfile)
 
 
-    def initialize(self,configfile):
-        self.configfile=configfile
+
+        self.version: str | None = None
+
+    def initialize(self):
+        start_http_server(self.exporter_port)
+
         self._mqtt_client.initialize(self._dahua_client.outgoing_events)
         self._dahua_client.initialize(self._mqtt_client.outgoing_events)
 
@@ -104,4 +121,4 @@ class DahuaVTOManager:
 
 
 manager = DahuaVTOManager()
-manager.initialize(configfile=configfile)
+manager.initialize()

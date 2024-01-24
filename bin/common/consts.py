@@ -51,3 +51,42 @@ MQTT_ERROR_MESSAGES = {
 TOPIC_COMMAND = "/Command"
 TOPIC_DOOR = "Open"
 TOPIC_MUTE = "Mute"
+
+JSON_START_PATTERN = "{\""
+
+CLIENT_DAHUA = "Dahua"
+CLIENT_MQTT = "MQTT"
+CLIENT_BASE = "Base"
+
+METRIC_MQTT_INCOMING_MESSAGES = "Incoming Messages"
+METRIC_MQTT_OUTGOING_MESSAGES = "Outgoing Messages"
+METRIC_MQTT_FAILED_OUTGOING_MESSAGES = "Failed Outgoing Messages"
+
+METRIC_DAHUA_MESSAGES = "Messages"
+METRIC_DAHUA_FAILED_MESSAGES = "Failed Messages"
+
+METRIC_STATUS = "Connectivity Status"
+
+CLIENT_METRICS = {
+    CLIENT_BASE: {
+        "labels": ["instance", "version"],
+        "metrics": {
+            METRIC_STATUS: "status"
+        }
+    },
+    CLIENT_DAHUA: {
+        "labels": ["session_id", "topic"],
+        "metrics": {
+            METRIC_DAHUA_MESSAGES: METRIC_DAHUA_MESSAGES,
+            METRIC_DAHUA_FAILED_MESSAGES: METRIC_DAHUA_FAILED_MESSAGES
+        }
+    },
+    CLIENT_MQTT: {
+        "labels": ["topic"],
+        "metrics": {
+            METRIC_MQTT_INCOMING_MESSAGES: METRIC_MQTT_INCOMING_MESSAGES,
+            METRIC_MQTT_OUTGOING_MESSAGES: METRIC_MQTT_OUTGOING_MESSAGES,
+            METRIC_MQTT_FAILED_OUTGOING_MESSAGES: METRIC_MQTT_FAILED_OUTGOING_MESSAGES
+        }
+    }
+}
