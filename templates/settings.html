@@ -702,12 +702,11 @@ function testipcam() {
 
 	$.ajax( { 
 			type: 'POST',
-			url: "TestSnapshots.py",
 			data: { 
-			// 	ajax: 'testipcam', 
-			// 	token: $('#token').val(),
-			// 	accountid: $('#accountid').val(),
-			// 	secpin: secpin
+				ajax: 'testipcam', 
+				token: $('#token').val(),
+				accountid: $('#accountid').val(),
+				secpin: secpin
 			}
 		} )
 	.fail(function( data ) {

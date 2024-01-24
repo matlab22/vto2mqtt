@@ -21,7 +21,7 @@ class MQTTClient(BaseClient):
     def __init__(self, version: str, registry: CollectorRegistry, configfile: str):
         super().__init__(CLIENT_MQTT, version, registry, configfile)
 
-        self._mqtt_config = MQTTConfigurationData()
+        self._mqtt_config = MQTTConfigurationData(configfile)
         timestamp=str(datetime.now().timestamp())
         self._mqtt_client = mqtt.Client(self._mqtt_config.client_id+timestamp, clean_session=True)
         self._mqtt_client.user_data_set(self)
@@ -31,7 +31,7 @@ class MQTTClient(BaseClient):
         self._mqtt_client.on_message = self._on_mqtt_message
         self._mqtt_client.on_disconnect = self._on_mqtt_disconnect
 
-        self._snap = Snapshot(self.configfile)
+        self._snap = Snapshot(configfile)
 
     @property
     def topic_command_prefix(self):

@@ -17,7 +17,7 @@ class DahuaClient(BaseClient):
     def __init__(self, version: str, registry: CollectorRegistry, configfile: str):
         super().__init__(CLIENT_DAHUA, version, registry, configfile)
 
-        self.dahua_config = DahuaConfigurationData()
+        self.dahua_config = DahuaConfigurationData(configfile)
         self.api: DahuaAPI | None = None
 
     def _set_api(self, api: DahuaAPI):

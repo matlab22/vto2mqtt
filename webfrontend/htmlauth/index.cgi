@@ -163,11 +163,30 @@ if( $q->{ajax} ) {
 		print JSON->new->canonical(1)->encode(\%response);
 	}
 
-	# Test IPCAM Settings
-	if( $q->{ajax} eq "testipcam" ) {
-		LOGINF "P$$ testipcam: testdahua was called.";
-		$response{error} = 0;
-		system("$lbpbindir/dahuagrabber.pl --logfile=test.log --verbose --test --token=$q->{'token'} --account=$q->{'account'} > /dev/null 2>&1");
+	# # Test IPCAM Settings
+	if ($q->{ajax} eq "testipcam") {
+		LOGINF "P$$ testipcam: testipcam was called.";
+
+		# Execute Python script and capture both output and error
+		my $python_script = "/usr/bin/python3";  # Path to Python interpreter
+		my $python_path = "$lbpbindir/test/TestSnapshots.py";
+		my $logfile = "test.log";
+		my $token = $q->{'token'};
+		my $account = $q->{'account'};
+
+		my $command = "$python_script $python_path --logfile $logfile --verbose --test --token=$token --account=$account 2>&1";
+		my $output = `$command`;
+
+		if ($? == 0) {
+			# Script executed successfully
+			$response{error} = 0;
+			$response{message} = "Script executed successfully";
+		} else {
+			# Script execution failed
+			$response{error} = 1;
+			$response{message} = "Script execution failed: $output";
+		}
+
 		print JSON->new->canonical(1)->encode(\%response);
 	}
 

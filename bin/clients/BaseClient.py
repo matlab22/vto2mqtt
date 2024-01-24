@@ -41,7 +41,7 @@ class BaseClient:
         self._build_metrics(self._base_metrics, self._base_metric_labels)
         self._build_metrics(self._client_metrics, self._metric_labels)
 
-        mqtt_config = MQTTConfigurationData()
+        mqtt_config = MQTTConfigurationData(self._configfile)
 
         self._base_metric_label_values = [mqtt_config.client_id, version]
 

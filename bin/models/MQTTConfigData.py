@@ -13,9 +13,9 @@ class MQTTConfigurationData:
     port: Optional[int]
     topic_prefix: Optional[str]
     topic_command_prefix: Optional[str]
+    configfile: Optional[str]
 
-
-    def __init__(self,configfile: str):
+    def __init__(self,configfile):
         self.configfile=configfile
         try:
             with open(self.configfile) as json_pcfg_file:
