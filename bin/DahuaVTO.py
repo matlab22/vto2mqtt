@@ -98,7 +98,7 @@ class DahuaVTOManager:
         # with open("version.json", "r") as file:
         #     version_data = json.load(file)
         #     version = version_data.get("version")
-        version = "Year.Month.Day.NumberOfSecondsSinceMidnight"
+        version = "2024.01.24.51239"
 
         _LOGGER.info(f"Starting DahuaVTO2MQTT, Version: {version}")
 
