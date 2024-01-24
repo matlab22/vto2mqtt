@@ -5,5 +5,5 @@
 
 python3-paho-mqtt
 python3-requests
-python3-prometheus_client
+python3-prometheus-client
 python3-pil
