@@ -95,9 +95,10 @@ class DahuaVTOManager:
         except Exception as e:
             _LOGGER.exception(str(e))
         
-        with open("version.json", "r") as file:
-            version_data = json.load(file)
-            version = version_data.get("version")
+        # with open("version.json", "r") as file:
+        #     version_data = json.load(file)
+        #     version = version_data.get("version")
+        version = "Year.Month.Day.NumberOfSecondsSinceMidnight"
 
         _LOGGER.info(f"Starting DahuaVTO2MQTT, Version: {version}")
 
