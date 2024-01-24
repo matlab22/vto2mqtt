@@ -1,51 +1,53 @@
-<!-- SecurePIN --> 
+<!-- SecurePIN -->
 <div id="securepin_block" style="margin: 0 auto; width:350px; display:none">
 	<TMPL_VAR SECUREPIN.ENTER_SECUREPIN>
-	<input name="securepin" id="securepin" type="text">
-	<button class="ui-btn ui-btn-icon-right ui-corner-all" id="check_securepin" data-inline="true"><TMPL_VAR COMMON.BUTTON_OK></button>
-	
-	<div class="hint" id="check_hint" style="padding: 5px 5px 5px 5px;"></div>
-	<br>
-	<div class="path" style="background: #FF8080; font-color: black; text-shadow: none; border: black 1px solid; padding: 5px;">
-		<p style="font-weight: bold;">
-			<TMPL_VAR SECUREPIN.WARNING_TITLE>
-		</p>
-		<hr>
-		<p>
-			<TMPL_VAR SECUREPIN.PREVENT_SPY>
-		</p>
-	</div>
+		<input name="securepin" id="securepin" type="text">
+		<button class="ui-btn ui-btn-icon-right ui-corner-all" id="check_securepin" data-inline="true">
+			<TMPL_VAR COMMON.BUTTON_OK>
+		</button>
+
+		<div class="hint" id="check_hint" style="padding: 5px 5px 5px 5px;"></div>
+		<br>
+		<div class="path"
+			style="background: #FF8080; font-color: black; text-shadow: none; border: black 1px solid; padding: 5px;">
+			<p style="font-weight: bold;">
+				<TMPL_VAR SECUREPIN.WARNING_TITLE>
+			</p>
+			<hr>
+			<p>
+				<TMPL_VAR SECUREPIN.PREVENT_SPY>
+			</p>
+		</div>
 </div>
 
 <!-- ****************************************************************************************** -->
 
 <style>
-	.listtable td
-	{
-		vertical-align	:middle;
-		text-align	:center;
+	.listtable td {
+		vertical-align: middle;
+		text-align: center;
 	}
-	.listtable td img
-	{
-		padding		:5px;
+
+	.listtable td img {
+		padding: 5px;
 	}
-	.lb_flex-item 
-	{	
-		min-width	:450px;
-		width		:450px;
-		max-width	:450px;
-		flex-wrap	:nowrap;
-		margin-top	:-10px;  
+
+	.lb_flex-item {
+		min-width: 450px;
+		width: 450px;
+		max-width: 450px;
+		flex-wrap: nowrap;
+		margin-top: -10px;
 	}
-	.lb_flex-item-help 
-	{
-		min-width	:100px;
-		width		:100%;
-		position	:relative;
-		margin-left	:10px;
+
+	.lb_flex-item-help {
+		min-width: 100px;
+		width: 100%;
+		position: relative;
+		margin-left: 10px;
 	}
-	.ipcam_snapshot-item 
-	{	
+
+	.ipcam_snapshot-item {
 		/* display: grid;
 		/* grid-template-columns: 400px repeat(10, 1fr); */
 		/* grid-template-columns: 400px 400px; */
@@ -54,21 +56,25 @@
 		/* grid-gap: 15px; */
 		border: 1px solid grey;
 	}
+
 	.ipcam_snapshot-row {
-		display: -ms-flexbox; /* IE10 */
+		display: -ms-flexbox;
+		/* IE10 */
 		display: flex;
-		-ms-flex-wrap: wrap; /* IE10 */
+		-ms-flex-wrap: wrap;
+		/* IE10 */
 		flex-wrap: wrap;
 		padding: 0 4px;
 	}
 
-		/* Create four equal columns that sits next to each other */
+	/* Create four equal columns that sits next to each other */
 	.ipcam_snapshot-column {
-		min-width	:450px;
-		width		:450px;
-		max-width	:450px;
+		min-width: 450px;
+		width: 450px;
+		max-width: 450px;
 		padding: 0px 4px;
 	}
+
 	.mqtttable {
 		vertical-align: middle;
 		text-align: left;
@@ -77,94 +83,105 @@
 		border: 1px solid grey;
 		padding: 10px;
 		width: 100%;
-		
+
 	}
-	.mqtttable_vicol, .mqtttable_desccol {
+
+	.mqtttable_vicol,
+	.mqtttable_desccol {
 		border: 1px solid grey;
 		padding: 10px;
 	}
+
 	.mqtttable_headrow {
 		vertical-align: middle;
 	}
-
 </style>
 
 <!-- ****************************************************************************************** -->
-		
+
 <TMPL_IF FORM_DAHUA>
 
-	<div id="main" style="visibility:hidden"> <!-- style="display:none;" --> 
+	<div id="main" style="visibility:hidden"> <!-- style="display:none;" -->
 
 		<form>
 
-		<div class="lb_flex-container DAHUA ui-state-disabled">
-			<div	class="lb_flex-item-label">
-				<label	class=	"control-label"
-					for="dahua_host_ip"><TMPL_VAR DAHUA.LABEL_DAHUA_HOST_IP></label>
+			<div class="lb_flex-container DAHUA ui-state-disabled">
+				<div class="lb_flex-item-label">
+					<label class="control-label" for="dahua_host_ip">
+						<TMPL_VAR DAHUA.LABEL_DAHUA_HOST_IP>
+					</label>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item">
+					<input width="100%" value="" id="dahua_host_ip" name="dahua_host_ip" type="text" class="textfield"
+						data-validation-rule="special:hostname_or_ipaddr"
+						data-validation-error-msg="<TMPL_VAR DAHUA.MSG_VALINVALID_HOST_IP>">
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item-help hint">
+					<TMPL_VAR DAHUA.HINT_DAHUA_HOST_IP>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
 			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item">
-				<input width="100%" value="" id="dahua_host_ip" name="dahua_host_ip" type="text" class="textfield"
-				data-validation-rule="special:hostname_or_ipaddr" data-validation-error-msg="<TMPL_VAR DAHUA.MSG_VALINVALID_HOST_IP>"> 
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item-help hint">
-				<TMPL_VAR DAHUA.HINT_DAHUA_HOST_IP>
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-		</div>
 
-		<div class="lb_flex-container DAHUA ui-state-disabled">
-			<div	class="lb_flex-item-label">
-				<label	class=	"control-label"
-					for="dahua_host_username"><TMPL_VAR DAHUA.LABEL_DAHUA_HOST_USERNAME></label>
+			<div class="lb_flex-container DAHUA ui-state-disabled">
+				<div class="lb_flex-item-label">
+					<label class="control-label" for="dahua_host_username">
+						<TMPL_VAR DAHUA.LABEL_DAHUA_HOST_USERNAME>
+					</label>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item">
+					<input width="100%" value="" id="dahua_host_username" name="dahua_host_username" type="text"
+						class="textfield">
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item-help hint">
+					<TMPL_VAR DAHUA.HINT_DAHUA_HOST_USERNAME>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
 			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item">
-				<input width="100%" value="" id="dahua_host_username" name="dahua_host_username" type="text" class="textfield">
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item-help hint">
-				<TMPL_VAR DAHUA.HINT_DAHUA_HOST_USERNAME>
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-		</div>
 
-		<div class="lb_flex-container DAHUA ui-state-disabled">
-			<div	class="lb_flex-item-label">
-				<label	class=	"control-label"
-					for="dahua_host_password"><TMPL_VAR DAHUA.LABEL_DAHUA_HOST_PASSWORD></label>
+			<div class="lb_flex-container DAHUA ui-state-disabled">
+				<div class="lb_flex-item-label">
+					<label class="control-label" for="dahua_host_password">
+						<TMPL_VAR DAHUA.LABEL_DAHUA_HOST_PASSWORD>
+					</label>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item">
+					<input width="100%" value="" id="dahua_host_password" name="dahua_host_password" type="text"
+						class="textfield">
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item-help hint">
+					<TMPL_VAR DAHUA.HINT_DAHUA_HOST_PASSWORD>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
 			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item">
-				<input width="100%" value="" id="dahua_host_password" name="dahua_host_password" type="text" class="textfield">
+
+			<div style="padding: 0px 0px 20px 0px;"></div>
+
+			<div class="lb_flex-container DAHUA">
+				<div class="lb_flex-item-label">
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item">
+					<a href="javascript:savedahua();" id="btnsavedahua"
+						class="ui-btn ui-corner-all ui-shadow ui-btn-b ui-btn-icon-left ui-icon-check ui-btn-inline"
+						data-transition="flow" data-inline="true">
+						<TMPL_VAR DAHUA.BUTTON_SAVE>
+					</a>
+					<div class="hint" id="dahua_hint">&nbsp;</div>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item-help hint">
+				</div>
+				<div class="lb_flex-item-spacer"></div>
 			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item-help hint">
-				<TMPL_VAR DAHUA.HINT_DAHUA_HOST_PASSWORD>
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-		</div>
-	
-		<div style="padding: 0px 0px 20px 0px;"></div>
-	
-		<div class="lb_flex-container DAHUA">
-			<div	class="lb_flex-item-label">
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item">
-			<a href="javascript:savedahua();" id="btnsavedahua" class="ui-btn ui-corner-all ui-shadow ui-btn-b ui-btn-icon-left ui-icon-check ui-btn-inline" 
-					data-transition="flow" data-inline="true"><TMPL_VAR DAHUA.BUTTON_SAVE></a>
-			<div class="hint" id="dahua_hint">&nbsp;</div>
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item-help hint">
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-		</div>
-		
+
 		</form>
-	
+
 	</div>
 
 </TMPL_IF>
@@ -173,338 +190,372 @@
 
 <TMPL_IF FORM_IPCAM>
 
-	<div id="main" style="visibility:hidden"> <!-- style="display:none;" --> 
-		
+	<div id="main" style="visibility:hidden"> <!-- style="display:none;" -->
+
 		<form>
 
-		<div class="lb_flex-container IPCAM ui-state-disabled">
-			<div	class="lb_flex-item-label">
-				<label	class=	"control-label"
-					for="ipcam_url"><TMPL_VAR IPCAM.LABEL_IPCAM_URL></label>
+			<div class="lb_flex-container IPCAM ui-state-disabled">
+				<div class="lb_flex-item-label">
+					<label class="control-label" for="ipcam_url">
+						<TMPL_VAR IPCAM.LABEL_IPCAM_URL>
+					</label>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item">
+					<input width="100%" value="" id="ipcam_url" name="ipcam_url" type="text" class="textfield">
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item-help hint">
+					<TMPL_VAR IPCAM.HINT_IPCAM_URL>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
 			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item">
-				<input width="100%" value="" id="ipcam_url" name="ipcam_url" type="text" class="textfield">
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item-help hint">
-				<TMPL_VAR IPCAM.HINT_IPCAM_URL>
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-		</div>
 
-		<div class="lb_flex-container IPCAM ui-state-disabled">
-			<div	class="lb_flex-item-label">
-				<label	class=	"control-label"
-					for="ipcam_username"><TMPL_VAR IPCAM.LABEL_IPCAM_USERNAME></label>
+			<div class="lb_flex-container IPCAM ui-state-disabled">
+				<div class="lb_flex-item-label">
+					<label class="control-label" for="ipcam_username">
+						<TMPL_VAR IPCAM.LABEL_IPCAM_USERNAME>
+					</label>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item">
+					<input width="100%" value="" id="ipcam_username" name="ipcam_username" type="text"
+						class="textfield">
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item-help hint">
+					<TMPL_VAR IPCAM.HINT_IPCAM_USERNAME>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
 			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item">
-				<input width="100%" value="" id="ipcam_username" name="ipcam_username" type="text" class="textfield">
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item-help hint">
-				<TMPL_VAR IPCAM.HINT_IPCAM_USERNAME>
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-		</div>
 
-		<div class="lb_flex-container IPCAM ui-state-disabled">
-			<div	class="lb_flex-item-label">
-				<label	class=	"control-label"
-					for="ipcam_password"><TMPL_VAR IPCAM.LABEL_IPCAM_PASSWORD></label>
+			<div class="lb_flex-container IPCAM ui-state-disabled">
+				<div class="lb_flex-item-label">
+					<label class="control-label" for="ipcam_password">
+						<TMPL_VAR IPCAM.LABEL_IPCAM_PASSWORD>
+					</label>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item">
+					<input width="100%" value="" id="ipcam_password" name="ipcam_password" type="text"
+						class="textfield">
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item-help hint">
+					<TMPL_VAR IPCAM.HINT_IPCAM_PASSWORD>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
 			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item">
-				<input width="100%" value="" id="ipcam_password" name="ipcam_password" type="text" class="textfield">
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item-help hint">
-				<TMPL_VAR IPCAM.HINT_IPCAM_PASSWORD>
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-		</div>
 
-		<div class="lb_flex-container IPCAM ui-state-disabled">
-			<div	class="lb_flex-item-label">
-				<label	class=	"control-label"
-					for="snapshot_path"><TMPL_VAR IPCAM.LABEL_SNAPSHOT_PATH></label>
+			<div class="lb_flex-container IPCAM ui-state-disabled">
+				<div class="lb_flex-item-label">
+					<label class="control-label" for="snapshot_path">
+						<TMPL_VAR IPCAM.LABEL_SNAPSHOT_PATH>
+					</label>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item">
+					<input width="100%" value="" id="snapshot_path" name="snapshot_path" type="text" class="textfield">
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item-help hint">
+					<TMPL_VAR IPCAM.HINT_SNAPSHOT_PATH>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
 			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item">
-				<input width="100%" value="" id="snapshot_path" name="snapshot_path" type="text" class="textfield">
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item-help hint">
-				<TMPL_VAR IPCAM.HINT_SNAPSHOT_PATH>
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-		</div>
 
-		<div class="lb_flex-container IPCAM ui-state-disabled">
-			<div	class="lb_flex-item-label">
-				<label	class=	"control-label"
-					for="snapshot_keep_count"><TMPL_VAR IPCAM.LABEL_SNAPSHOT_KEEP_COUNT></label>
+			<div class="lb_flex-container IPCAM ui-state-disabled">
+				<div class="lb_flex-item-label">
+					<label class="control-label" for="snapshot_keep_count">
+						<TMPL_VAR IPCAM.LABEL_SNAPSHOT_KEEP_COUNT>
+					</label>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item">
+					<input width="100%" value="" id="snapshot_keep_count" name="snapshot_keep_count" type="text"
+						class="textfield" data-validation-rule="special:number-min-max-value:1:15"
+						data-validation-error-msg="<TMPL_VAR IPCAM.MSG_VALINVALID_BROKERPORT>">
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item-help hint">
+					<TMPL_VAR IPCAM.HINT_SNAPSHOT_KEEP_COUNT>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
 			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item">
-				<input width="100%" value="" id="snapshot_keep_count" name="snapshot_keep_count" type="text" class="textfield"
-				data-validation-rule="special:number-min-max-value:1:15" data-validation-error-msg="<TMPL_VAR IPCAM.MSG_VALINVALID_BROKERPORT>">
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item-help hint">
-				<TMPL_VAR IPCAM.HINT_SNAPSHOT_KEEP_COUNT>
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-		</div>
 
-		<div class="lb_flex-container IPCAM ui-state-disabled">
-			<div	class="lb_flex-item-label">
-				<label	class=	"control-label"
-					for="snapshot_filename"><TMPL_VAR IPCAM.LABEL_SNAPSHOT_FILENAME></label>
+			<div class="lb_flex-container IPCAM ui-state-disabled">
+				<div class="lb_flex-item-label">
+					<label class="control-label" for="snapshot_filename">
+						<TMPL_VAR IPCAM.LABEL_SNAPSHOT_FILENAME>
+					</label>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item">
+					<input width="100%" value="" id="snapshot_filename" name="snapshot_filename" type="text"
+						class="textfield">
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item-help hint">
+					<TMPL_VAR IPCAM.HINT_SNAPSHOT_FILENAME>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
 			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item">
-				<input width="100%" value="" id="snapshot_filename" name="snapshot_filename" type="text" class="textfield">
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item-help hint">
-				<TMPL_VAR IPCAM.HINT_SNAPSHOT_FILENAME>
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-		</div>
 
-		<div class="lb_flex-container IPCAM ui-state-disabled">
-			<div	class="lb_flex-item-label">
-				<label	class=	"control-label"
-					for="snapshot_topic_suffix"><TMPL_VAR IPCAM.LABEL_SNAPSHOT_TOPIC></label>
+			<div class="lb_flex-container IPCAM ui-state-disabled">
+				<div class="lb_flex-item-label">
+					<label class="control-label" for="snapshot_topic_suffix">
+						<TMPL_VAR IPCAM.LABEL_SNAPSHOT_TOPIC>
+					</label>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item">
+					<input width="100%" value="" id="snapshot_topic_suffix" name="snapshot_topic_suffix" type="text"
+						class="textfield">
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item-help hint">
+					<TMPL_VAR IPCAM.HINT_SNAPSHOT_TOPIC>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
 			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item">
-				<input width="100%" value="" id="snapshot_topic_suffix" name="snapshot_topic_suffix" type="text" class="textfield">
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item-help hint">
-				<TMPL_VAR IPCAM.HINT_SNAPSHOT_TOPIC>
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-		</div>
 
-		<div style="padding: 0px 0px 20px 0px;"></div>
-	
-		<div class="lb_flex-container IPCAM">
-			<div	class="lb_flex-item-label">
+			<div style="padding: 0px 0px 20px 0px;"></div>
+
+			<div class="lb_flex-container IPCAM">
+				<div class="lb_flex-item-label">
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item">
+					<a href="javascript:saveipcam();" id="btnsaveipcam"
+						class="ui-btn ui-corner-all ui-shadow ui-btn-b ui-btn-icon-left ui-icon-check ui-btn-inline"
+						data-transition="flow" data-inline="true">
+						<TMPL_VAR IPCAM.BUTTON_SAVE>
+					</a>
+					<a href="javascript:testipcam();" id="btnipcam"
+						class="ui-btn ui-corner-all ui-shadow ui-btn-b ui-btn-icon-left ui-icon-action ui-btn-inline"
+						data-transition="flow" data-inline="true">
+						<TMPL_VAR IPCAM.BUTTON_TEST>
+					</a>
+					<div class="hint" id="ipcam_hint">&nbsp;</div>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item-help hint">
+				</div>
+				<div class="lb_flex-item-spacer"></div>
 			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item">
-			<a href="javascript:saveipcam();" id="btnsaveipcam" class="ui-btn ui-corner-all ui-shadow ui-btn-b ui-btn-icon-left ui-icon-check ui-btn-inline" 
-					data-transition="flow" data-inline="true"><TMPL_VAR IPCAM.BUTTON_SAVE></a>
-			<a href="javascript:testipcam();" id="btnipcam" class="ui-btn ui-corner-all ui-shadow ui-btn-b ui-btn-icon-left ui-icon-action ui-btn-inline" 
-					data-transition="flow" data-inline="true"><TMPL_VAR IPCAM.BUTTON_TEST></a>
-			<div class="hint" id="ipcam_hint">&nbsp;</div>
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item-help hint">
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-		</div>
 
 
-		<div class="lb_flex-container IPCAM">
-			<div	class="ipcam_snapshot-item"></div>
-				<div	class="ipcam_snapshot-row">
-					<div	class="ipcam_snapshot-column">
+			<div class="lb_flex-container IPCAM">
+				<div class="ipcam_snapshot-item"></div>
+				<div class="ipcam_snapshot-row">
+					<div class="ipcam_snapshot-column">
 						<span id="snapshot_caption_1"></span>
 						<span id="snapshot_1"></span>
 						<span id="snapshot_arch_1"></span>
 					</div>
-					<div	class="ipcam_snapshot-column">
+					<div class="ipcam_snapshot-column">
 						<span id="snapshot_caption_2"></span>
 						<span id="snapshot_2"></span>
 						<span id="snapshot_arch_2"></span>
 					</div>
-					<div	class="ipcam_snapshot-column">
+					<div class="ipcam_snapshot-column">
 						<span id="snapshot_caption_3"></span>
 						<span id="snapshot_3"></span>
 						<span id="snapshot_arch_3"></span>
 					</div>
-					<div	class="ipcam_snapshot-column">
+					<div class="ipcam_snapshot-column">
 						<span id="snapshot_caption_4"></span>
 						<span id="snapshot_4"></span>
 						<span id="snapshot_arch_4"></span>
 					</div>
-					<div	class="ipcam_snapshot-column">
+					<div class="ipcam_snapshot-column">
 						<span id="snapshot_caption_5"></span>
 						<span id="snapshot_5"></span>
 						<span id="snapshot_arch_5"></span>
 					</div>
+				</div>
 			</div>
-		</div>
 
 		</form>
 
 	</div>
-	
+
 </TMPL_IF>
 <!-- ****************************************************************************************** -->
 <TMPL_IF FORM_MQTT>
 
-	<div id="main" style="visibility:hidden"> <!-- style="display:none;" --> 
+	<div id="main" style="visibility:hidden"> <!-- style="display:none;" -->
 
 		<form>
 
-		<div class="lb_flex-container MQTT ui-state-disabled">
-			<div	class="lb_flex-item-label">
-				<label	class=	"control-label"
-					for="MQTTId"><TMPL_VAR MQTT.LABEL_MQTTId></label>
+			<div class="lb_flex-container MQTT ui-state-disabled">
+				<div class="lb_flex-item-label">
+					<label class="control-label" for="MQTTId">
+						<TMPL_VAR MQTT.LABEL_MQTTId>
+					</label>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item">
+					<input width="100%" value="" id="MQTTId" name="MQTTId" type="text" class="textfield"
+						data-validation-rule="^(?!.*//.*)[^\+#]+$"
+						data-validation-error-msg="<TMPL_VAR MQTT.MSG_VALINVALID_MQTTId>">
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item-help hint">
+					<TMPL_VAR MQTT.HINT_MQTTId>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
 			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item">
-				<input width="100%" value="" id="MQTTId" name="MQTTId" type="text" class="textfield" 
-				data-validation-rule="^(?!.*//.*)[^\+#]+$" data-validation-error-msg="<TMPL_VAR MQTT.MSG_VALINVALID_MQTTId>">
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item-help hint">
-				<TMPL_VAR MQTT.HINT_MQTTId>
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-		</div>			
 
 
-		<div class="lb_flex-container MQTT ui-state-disabled">
-			<div	class="lb_flex-item-label">
-				<label	class=	"control-label"
-					for="MQTTTopic"><TMPL_VAR MQTT.LABEL_MQTTTopic></label>
+			<div class="lb_flex-container MQTT ui-state-disabled">
+				<div class="lb_flex-item-label">
+					<label class="control-label" for="MQTTTopic">
+						<TMPL_VAR MQTT.LABEL_MQTTTopic>
+					</label>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item">
+					<input width="100%" value="" id="MQTTTopic" name="MQTTTopic" type="text" class="textfield"
+						data-validation-rule="^(?!.*//.*)[^\+#]+$"
+						data-validation-error-msg="<TMPL_VAR MQTT.MSG_VALINVALID_MQTTTOPIC>">
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item-help hint">
+					<TMPL_VAR MQTT.HINT_MQTTTOPIC>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
 			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item">
-				<input width="100%" value="" id="MQTTTopic" name="MQTTTopic" type="text" class="textfield" 
-				data-validation-rule="^(?!.*//.*)[^\+#]+$" data-validation-error-msg="<TMPL_VAR MQTT.MSG_VALINVALID_MQTTTOPIC>">
+
+			<TMPL_IF MQTTGATEWAY_INSTALLED>
+				<div class="lb_flex-container MQTT ui-state-disabled">
+					<div class="lb_flex-item-label">
+						<label class="control-label" for="MQTTUseMQTTGateway">
+							<TMPL_VAR MQTT.LABEL_MQTTUseMQTTGateway>
+						</label>
+					</div>
+					<div class="lb_flex-item-spacer"></div>
+					<div class="lb_flex-item">
+						<input type="checkbox" name="MQTTUseMQTTGateway" id="MQTTUseMQTTGateway">
+						</fieldset>
+					</div>
+					<div class="lb_flex-item-spacer"></div>
+					<div class="lb_flex-item-help hint">
+						<TMPL_VAR MQTT.HINT_MQTTUseMQTTGateway>
+					</div>
+					<div class="lb_flex-item-spacer"></div>
+				</div>
+
+				<div class="lb_flex-container MQTT ui-state-disabled">
+					<div class="lb_flex-item-label">
+					</div>
+					<div class="lb_flex-item-spacer"></div>
+					<div class="lb_flex-item">
+						<span id="mqtt_onverviewlink"></span>
+					</div>
+					<div class="lb_flex-item-spacer"></div>
+					<div class="lb_flex-item-help hint">
+					</div>
+					<div class="lb_flex-item-spacer"></div>
+				</div>
+			</TMPL_IF>
+
+			<div class="lb_flex-container MQTT ui-state-disabled ownbroker">
+				<div class="lb_flex-item-label">
+					<label class="control-label" for="BrokerUsername">
+						<TMPL_VAR MQTT.LABEL_BROKERSERVER>
+					</label>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item">
+					<input width="100%" value="" id="BrokerServer" name="BrokerServer" type="text" class="textfield"
+						data-validation-rule="special:hostname_or_ipaddr"
+						data-validation-error-msg="<TMPL_VAR MQTT.MSG_VALINVALID_BROKERSERVER>">
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item-help hint">
+					<TMPL_VAR MQTT.HINT_BROKERSERVER>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
 			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item-help hint">
-				<TMPL_VAR MQTT.HINT_MQTTTOPIC>
+
+			<div class="lb_flex-container MQTT ui-state-disabled ownbroker">
+				<div class="lb_flex-item-label">
+					<label class="control-label" for="BrokerUsername">
+						<TMPL_VAR MQTT.LABEL_BROKERPORT>
+					</label>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item">
+					<input width="100%" value="" id="BrokerPort" name="BrokerPort" type="text" class="textfield"
+						data-validation-rule="special:number-min-max-value:1:65000"
+						data-validation-error-msg="<TMPL_VAR MQTT.MSG_VALINVALID_BROKERPORT>">
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item-help hint">
+					<TMPL_VAR MQTT.HINT_BROKERPORT>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
 			</div>
-			<div	class="lb_flex-item-spacer"></div>
-		</div>
-	
-	<TMPL_IF MQTTGATEWAY_INSTALLED>
-		<div class="lb_flex-container MQTT ui-state-disabled">
-			<div	class="lb_flex-item-label">
-				<label	class=	"control-label"
-					for="MQTTUseMQTTGateway"><TMPL_VAR MQTT.LABEL_MQTTUseMQTTGateway></label>
+
+			<div class="lb_flex-container MQTT ui-state-disabled ownbroker">
+				<div class="lb_flex-item-label">
+					<label class="control-label" for="BrokerUsername">
+						<TMPL_VAR MQTT.LABEL_BROKERUSERNAME>
+					</label>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item">
+					<input width="100%" value="" id="BrokerUsername" name="BrokerUsername" type="text"
+						class="textfield">
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item-help hint">
+					<TMPL_VAR MQTT.HINT_BROKERUSERNAME>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
 			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item">
-					<input type="checkbox" name="MQTTUseMQTTGateway" id="MQTTUseMQTTGateway">
-				</fieldset>
+
+			<div class="lb_flex-container MQTT ui-state-disabled ownbroker">
+				<div class="lb_flex-item-label">
+					<label class="control-label" for="BrokerPassword">
+						<TMPL_VAR MQTT.LABEL_BROKERPASSWORD>
+					</label>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item">
+					<input width="100%" value="" id="BrokerPassword" name="BrokerPassword" type="text"
+						class="textfield">
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item-help hint">
+					<TMPL_VAR MQTT.HINT_BROKERPASSWORD>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
 			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item-help hint">
-				<TMPL_VAR MQTT.HINT_MQTTUseMQTTGateway>
+
+			<div style="padding: 0px 0px 20px 0px;"></div>
+
+			<div class="lb_flex-container MQTT">
+				<div class="lb_flex-item-label">
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item">
+					<a href="javascript:saveMQTT();" id="btnsavemqtt"
+						class="ui-btn ui-corner-all ui-shadow ui-btn-b ui-btn-icon-left ui-icon-check"
+						data-transition="flow">
+						<TMPL_VAR MQTT.BUTTON_SAVE>
+					</a>
+					<div class="hint" id="mqtt_hint">&nbsp;</div>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item-help hint">
+				</div>
+				<div class="lb_flex-item-spacer"></div>
 			</div>
-			<div	class="lb_flex-item-spacer"></div>
-		</div>
-		
-		<div class="lb_flex-container MQTT ui-state-disabled">
-			<div	class="lb_flex-item-label">
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item">
-				<span id="mqtt_onverviewlink"></span>
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item-help hint">
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-		</div>
-	</TMPL_IF>
-	
-		<div class="lb_flex-container MQTT ui-state-disabled ownbroker">
-			<div	class="lb_flex-item-label">
-				<label	class=	"control-label"
-					for="BrokerUsername"><TMPL_VAR MQTT.LABEL_BROKERSERVER></label>
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item">
-				<input width="100%" value="" id="BrokerServer" name="BrokerServer" type="text" class="textfield"
-				data-validation-rule="special:hostname_or_ipaddr" data-validation-error-msg="<TMPL_VAR MQTT.MSG_VALINVALID_BROKERSERVER>"> 
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item-help hint">
-				<TMPL_VAR MQTT.HINT_BROKERSERVER>
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-		</div>
-		
-		<div class="lb_flex-container MQTT ui-state-disabled ownbroker">
-			<div	class="lb_flex-item-label">
-				<label	class=	"control-label"
-					for="BrokerUsername"><TMPL_VAR MQTT.LABEL_BROKERPORT></label>
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item">
-				<input width="100%" value="" id="BrokerPort" name="BrokerPort" type="text" class="textfield"
-				data-validation-rule="special:number-min-max-value:1:65000" data-validation-error-msg="<TMPL_VAR MQTT.MSG_VALINVALID_BROKERPORT>">			
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item-help hint">
-				<TMPL_VAR MQTT.HINT_BROKERPORT>
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-		</div>
-		
-		<div class="lb_flex-container MQTT ui-state-disabled ownbroker">
-			<div	class="lb_flex-item-label">
-				<label	class=	"control-label"
-					for="BrokerUsername"><TMPL_VAR MQTT.LABEL_BROKERUSERNAME></label>
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item">
-				<input width="100%" value="" id="BrokerUsername" name="BrokerUsername" type="text" class="textfield"> 
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item-help hint">
-				<TMPL_VAR MQTT.HINT_BROKERUSERNAME>
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-		</div>
-		
-		<div class="lb_flex-container MQTT ui-state-disabled ownbroker">
-			<div	class="lb_flex-item-label">
-				<label	class=	"control-label"
-					for="BrokerPassword"><TMPL_VAR MQTT.LABEL_BROKERPASSWORD></label>
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item">
-				<input width="100%" value="" id="BrokerPassword" name="BrokerPassword" type="text" class="textfield"> 
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item-help hint">
-				<TMPL_VAR MQTT.HINT_BROKERPASSWORD>
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-		</div>
-	
-		<div style="padding: 0px 0px 20px 0px;"></div>
-	
-		<div class="lb_flex-container MQTT">
-			<div	class="lb_flex-item-label">
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item">
-			<a href="javascript:saveMQTT();" id="btnsavemqtt" class="ui-btn ui-corner-all ui-shadow ui-btn-b ui-btn-icon-left ui-icon-check" 
-						data-transition="flow"><TMPL_VAR MQTT.BUTTON_SAVE></a>
-			<div class="hint" id="mqtt_hint">&nbsp;</div>
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-			<div	class="lb_flex-item-help hint">
-			</div>
-			<div	class="lb_flex-item-spacer"></div>
-		</div>
-		
+
 		</form>
-	
+
 		<script>
 			// Validation
 			validate_enable('#MQTTId');
@@ -512,7 +563,7 @@
 			validate_enable('#BrokerServer');
 			validate_enable('#BrokerPort');
 		</script>
-	
+
 	</div>
 
 </TMPL_IF>
@@ -526,79 +577,82 @@
 <!-- ****************************************************************************************** -->
 
 <script>
-// Main form
-var formmqtt = '<TMPL_VAR FORM_MQTT>';
-var formipcam = '<TMPL_VAR FORM_IPCAM>';
-var formdahua = '<TMPL_VAR FORM_DAHUA>';
-var formlog = '<TMPL_VAR FORM_LOG>';
+	// Main form
+	var formmqtt = '<TMPL_VAR FORM_MQTT>';
+	var formipcam = '<TMPL_VAR FORM_IPCAM>';
+	var formdahua = '<TMPL_VAR FORM_DAHUA>';
+	var formlog = '<TMPL_VAR FORM_LOG>';
 
-var secpin = null;
+	var secpin = null;
 
-$(function() {
-	
-	if(secpin == null) {
-		console.log("Getting SecurePIN from session storage");
-		secpin = sessionStorage.getItem("securePIN");
-	}
-	if(secpin == null) {
-		console.log("SecurePIN is empty in session storage");
-		securePINwrong();
-	}
+	$(document).ready(function () {
 
-	getconfig();
-	
-	// Check SecurePIN by ajax and load form data
-	$("#check_securepin").click(function(){
-		console.log("Check securepin called");
-		checkSecurePIN();
+		if (secpin == null) {
+			console.log("Getting SecurePIN from session storage");
+			secpin = sessionStorage.getItem("securePIN");
+		}
+		if (secpin == null) {
+			console.log("SecurePIN is empty in session storage");
+			securePINwrong();
+		}
+
+		getconfig();
+
+		// Check SecurePIN by ajax and load form data
+		$("#check_securepin").click(function () {
+			console.log("Check securepin called");
+			checkSecurePIN();
+		});
+
+		// <TMPL_IF MQTTGATEWAY_PLUGINDBFOLDER>
+		$("#mqtt_onverviewlink").html('<a href="http://' + window.location.host + '/admin/plugins/mqttgateway/index.cgi?form=topics" target="_blank"><TMPL_VAR MQTT.LABEL_MQTT_GATEWAY_LINK></a>');
+		// </TMPL_IF>
+
+		// <TMPL_IF FORM_IPCAM>
+		snapshots = $('#snapshot_filename').val().split(",");
+		snapshots.forEach((name, index) => add_snapshots(name, index));
+		// </TMPL_IF>
 	});
 
-	// <TMPL_IF MQTTGATEWAY_PLUGINDBFOLDER>
-	$("#mqtt_onverviewlink").html('<a href="http://'+window.location.host+'/admin/plugins/mqttgateway/index.cgi?form=topics" target="_blank"><TMPL_VAR MQTT.LABEL_MQTT_GATEWAY_LINK></a>');
-	// </TMPL_IF>
+	// Get Images for IPCAM snapshots
+	function add_snapshots(name, index) {
+		var snapshot_url = '/plugins/vto2mqtt/snapshot/';
+		var fileextension = ".jpg";
+		//console.info({snapshot_url});
 
-	// <TMPL_IF FORM_IPCAM>
-	snapshots = $('#snapshot_filename').val().split(",");
-	snapshots.forEach((name, index) => add_snapshots(name, index));
-	// </TMPL_IF>
-});
+		$.ajax({
+			url: snapshot_url,
+			success: function (data) {
+				$(data).find("a:contains(" + fileextension + "):contains(" + name + ")").each(function () {
+					var filename = this.href
+					filename = filename.replace(window.location.host, "").replace('/admin/plugins/vto2mqtt/', "").replace("http://", "");
+					img_element = '<a href=' + snapshot_url + filename + '><img src="' + snapshot_url + filename + '"alt="' + filename + '"width=400px height=450px ></a>';
+					if (snapshots.includes(filename.replace(fileextension, ""))) {
+						console.info(window.location.host + snapshot_url + filename);
+						$('#snapshot_caption_' + `${index + 1}`).append(filename);
+						$('#snapshot_' + `${index + 1}`).append(img_element);
 
-// Get Images for IPCAM snapshots
-function add_snapshots(name, index) {
-	var snapshot_url = '/plugins/vto2mqtt/snapshot/';
-	var fileextension = ".jpg";
-	//console.info({snapshot_url});
-	$(document).ready(function(){
-			$.ajax({
-				url: snapshot_url,
-				success: function (data) {
-					$(data).find("a:contains(" + fileextension + "):contains("+name+")").each(function () {
-						var filename = this.href
-						filename= filename.replace(window.location.host, "").replace('/admin/plugins/vto2mqtt/', "").replace("http://", "");
-						img_element = 	'<a href='+snapshot_url+filename+'><img src="'+ snapshot_url + filename + '"alt="'+filename+'"width=400px height=450px ></a>';	
-						if (snapshots.includes(filename.replace(fileextension,""))) {
-							console.info(window.location.host+snapshot_url+filename);
-							$('#snapshot_caption_'+`${index + 1}`).append(filename);			
-							$('#snapshot_'+`${index + 1}`).append(img_element);
+					} else {
+						$('#snapshot_arch_' + `${index + 1}`).prepend(img_element);
+					}
+				});
+			},
+			error: function (xhr, status, error) {
+				console.error("AJAX Error:", status, error);
+			}
+		});
 
-						} else {
-							$('#snapshot_arch_'+`${index + 1}`).prepend(img_element);
-						}
-					});
-				}
-			});
-	});
-}
+	}
 
-// Save MQTT Settings
-function saveMQTT() {
-	$("#mqtt_hint").attr("style", "color:blue").html("<TMPL_VAR MQTT.HINT_SAVE_SAVING>");
-	console.log ("Saving", $('#MQTTId').val(), $('#MQTTTopic').val(), $('#BrokerServer').val(), $('#BrokerPort').val(), $('#BrokerUsername').val(), $('#BrokerPassword').val(), $('#MQTTUseMQTTGateway').is(":checked"));
-	$.ajax( { 
+	// Save MQTT Settings
+	function saveMQTT() {
+		$("#mqtt_hint").attr("style", "color:blue").html("<TMPL_VAR MQTT.HINT_SAVE_SAVING>");
+		console.log("Saving", $('#MQTTId').val(), $('#MQTTTopic').val(), $('#BrokerServer').val(), $('#BrokerPort').val(), $('#BrokerUsername').val(), $('#BrokerPassword').val(), $('#MQTTUseMQTTGateway').is(":checked"));
+		$.ajax({
 			type: 'POST',
-			data: { 
+			data: {
 				ajax: 'savemqtt',
-				mqttid: $('#MQTTId').val(), 
+				mqttid: $('#MQTTId').val(),
 				topic: $('#MQTTTopic').val(),
 				usemqttgateway: $('#MQTTUseMQTTGateway').is(":checked"),
 				broker: $('#BrokerServer').val(),
@@ -607,336 +661,336 @@ function saveMQTT() {
 				brokerpassword: $('#BrokerPassword').val(),
 				secpin: secpin
 			}
-		} )
-	.fail(function( data ) {
-		console.log( "savemqtt Fail", data );
-		$("#mqtt_hint").attr("style", "color:red").html("<TMPL_VAR MQTT.HINT_SAVE_ERROR>: "+data.statusText);
-	})
-	.done(function( data ) {
-		console.log( "savemqtt Success: ", data );
-		if(data.secpinerror) {
-			securePINwrong();
-			return;
-		}
-		$("#mqtt_hint").attr("style", "color:green").html("<TMPL_VAR MQTT.HINT_SAVE_OK>");
-		getconfig();
-	})
-	.always(function( data ) {
-		console.log( "savemqtt Finished" );
-	});
-}
+		})
+			.fail(function (data) {
+				console.log("savemqtt Fail", data);
+				$("#mqtt_hint").attr("style", "color:red").html("<TMPL_VAR MQTT.HINT_SAVE_ERROR>: " + data.statusText);
+			})
+			.done(function (data) {
+				console.log("savemqtt Success: ", data);
+				if (data.secpinerror) {
+					securePINwrong();
+					return;
+				}
+				$("#mqtt_hint").attr("style", "color:green").html("<TMPL_VAR MQTT.HINT_SAVE_OK>");
+				getconfig();
+			})
+			.always(function (data) {
+				console.log("savemqtt Finished");
+			});
+	}
 
-// Save DAHUA Settings
-function savedahua() {
-	$("#dahua_hint").attr("style", "color:blue").html("<TMPL_VAR DAHUA.HINT_SAVE_SAVING>");
-	console.log ("Saving", $('#dahua_host_ip').val(), $('#dahua_host_username').val(),$('#dahua_host_password').val());
-	$.ajax( { 
+	// Save DAHUA Settings
+	function savedahua() {
+		$("#dahua_hint").attr("style", "color:blue").html("<TMPL_VAR DAHUA.HINT_SAVE_SAVING>");
+		console.log("Saving", $('#dahua_host_ip').val(), $('#dahua_host_username').val(), $('#dahua_host_password').val());
+		$.ajax({
 			type: 'POST',
-			data: { 
+			data: {
 				ajax: 'savedahua',
 				dahua_host_ip: $('#dahua_host_ip').val(),
-				dahua_host_username: $('#dahua_host_username').val(),    
-				dahua_host_password: $('#dahua_host_password').val(),  
+				dahua_host_username: $('#dahua_host_username').val(),
+				dahua_host_password: $('#dahua_host_password').val(),
 				secpin: secpin
 			}
-		} )
-	.fail(function( data ) {
-		console.log( "savedahua Fail", data );
-		$("#dahua_hint").attr("style", "color:red").html("<TMPL_VAR DAHUA.HINT_SAVE_ERROR>: "+data.statusText);
-	})
-	.done(function( data ) {
-		console.log( "savedahua Success: ", data );
-		if(data.secpinerror) {
-			securePINwrong();
-			return;
-		}
-		$("#dahua_hint").attr("style", "color:green").html("<TMPL_VAR DAHUA.HINT_SAVE_OK>");
-		getconfig();
-	})
-	.always(function( data ) {
-		console.log( "savedahua Finished" );
-	});
-}
+		})
+			.fail(function (data) {
+				console.log("savedahua Fail", data);
+				$("#dahua_hint").attr("style", "color:red").html("<TMPL_VAR DAHUA.HINT_SAVE_ERROR>: " + data.statusText);
+			})
+			.done(function (data) {
+				console.log("savedahua Success: ", data);
+				if (data.secpinerror) {
+					securePINwrong();
+					return;
+				}
+				$("#dahua_hint").attr("style", "color:green").html("<TMPL_VAR DAHUA.HINT_SAVE_OK>");
+				getconfig();
+			})
+			.always(function (data) {
+				console.log("savedahua Finished");
+			});
+	}
 
-// Save IPCAM Settings
-function saveipcam() {
-	$("#ipcam_hint").attr("style", "color:blue").html("<TMPL_VAR IPCAM.HINT_SAVE_SAVING>");
-	console.log ("Saving", $('#ipcam_url').val(), $('#ipcam_username').val(),$('#ipcam_password').val(),$('#snapshot_topic_suffix').val(),$('#snapshot_filename').val(),$('#snapshot_path').val(),$('#snapshot_keep_count').val());
-	$.ajax( { 
+	// Save IPCAM Settings
+	function saveipcam() {
+		$("#ipcam_hint").attr("style", "color:blue").html("<TMPL_VAR IPCAM.HINT_SAVE_SAVING>");
+		console.log("Saving", $('#ipcam_url').val(), $('#ipcam_username').val(), $('#ipcam_password').val(), $('#snapshot_topic_suffix').val(), $('#snapshot_filename').val(), $('#snapshot_path').val(), $('#snapshot_keep_count').val());
+		$.ajax({
 			type: 'POST',
-			data: { 
+			data: {
 				ajax: 'saveipcam',
 				ipcam_url: $('#ipcam_url').val(),
-				ipcam_username: $('#ipcam_username').val(),    
+				ipcam_username: $('#ipcam_username').val(),
 				ipcam_password: $('#ipcam_password').val(),
 				snapshot_topic_suffix: $('#snapshot_topic_suffix').val(),
-				snapshot_filename: $('#snapshot_filename').val(),    
+				snapshot_filename: $('#snapshot_filename').val(),
 				snapshot_path: $('#snapshot_path').val(),
-				snapshot_keep_count: $('#snapshot_keep_count').val(),   
+				snapshot_keep_count: $('#snapshot_keep_count').val(),
 				secpin: secpin
 			}
-		} )
-	.fail(function( data ) {
-		console.log( "saveipcam Fail", data );
-		$("#ipcam_hint").attr("style", "color:red").html("<TMPL_VAR IPCAM.HINT_SAVE_ERROR>: "+data.statusText);
-	})
-	.done(function( data ) {
-		console.log( "saveipcam Success: ", data );
-		if(data.secpinerror) {
-			securePINwrong();
-			return;
-		}
-		$("#ipcam_hint").attr("style", "color:green").html("<TMPL_VAR IPCAM.HINT_SAVE_OK>");
-		getconfig();
-	})
-	.always(function( data ) {
-		console.log( "saveipcam Finished" );
-	});
-}
+		})
+			.fail(function (data) {
+				console.log("saveipcam Fail", data);
+				$("#ipcam_hint").attr("style", "color:red").html("<TMPL_VAR IPCAM.HINT_SAVE_ERROR>: " + data.statusText);
+			})
+			.done(function (data) {
+				console.log("saveipcam Success: ", data);
+				if (data.secpinerror) {
+					securePINwrong();
+					return;
+				}
+				$("#ipcam_hint").attr("style", "color:green").html("<TMPL_VAR IPCAM.HINT_SAVE_OK>");
+				getconfig();
+			})
+			.always(function (data) {
+				console.log("saveipcam Finished");
+			});
+	}
 
 
-// Test IPCAM Snapshots
-function testipcam() {
-	console.log ("Testing", $('#snapshot_filename').val().split(","));
-	$("#ipcam_hint").attr("style", "color:blue").html("<TMPL_VAR IPCAM.HINT_TEST_WAIT>");
+	// Test IPCAM Snapshots
+	function testipcam() {
+		console.log("Testing", $('#snapshot_filename').val().split(","));
+		$("#ipcam_hint").attr("style", "color:blue").html("<TMPL_VAR IPCAM.HINT_TEST_WAIT>");
 
-	$.ajax( { 
+		$.ajax({
 			type: 'POST',
-			data: { 
-				ajax: 'testipcam', 
+			data: {
+				ajax: 'testipcam',
 				token: $('#token').val(),
 				accountid: $('#accountid').val(),
 				secpin: secpin
 			}
-		} )
-	.fail(function( data ) {
-		console.log( "testipcam Fail", data );
-	})
-	.done(function( data ) {
-		console.log( "testipcam Success: ", data );
-		window.open("/admin/system/tools/logfile.cgi?logfile=plugins/labcom/test.log&header=html&format=template&only=once");
-		$("#ipcam_hint").html("");
-	})
-	.always(function( data ) {
-		console.log( "testipcam Finished" );
-	});
-}
+		})
+			.fail(function (data) {
+				console.log("testipcam Fail", data);
+			})
+			.done(function (data) {
+				console.log("testipcam Success: ", data);
+				window.open("/admin/system/tools/logfile.cgi?logfile=plugins/labcom/test.log&header=html&format=template&only=once");
+				$("#ipcam_hint").html("");
+			})
+			.always(function (data) {
+				console.log("testipcam Finished");
+			});
+	}
 
 
 
-// SecurePIN
-function checkSecurePIN() {
-	console.log("Checking SecurePin");
-	$("#check_securepin").attr("disabled", true);
-	$("#check_hint").attr("style", "color:blue;").html("<TMPL_VAR SECUREPIN.CHECK_WAIT>");
-	$.ajax({ 
+	// SecurePIN
+	function checkSecurePIN() {
+		console.log("Checking SecurePin");
+		$("#check_securepin").attr("disabled", true);
+		$("#check_hint").attr("style", "color:blue;").html("<TMPL_VAR SECUREPIN.CHECK_WAIT>");
+		$.ajax({
 			type: 'POST',
 			data: { ajax: 'checksecpin', secpin: $('#securepin').val() }
-	})
-	.fail(function( data ) {
-		securePINwrong();
-		return;
-	})
-	.done(function( data ) {
-		if( data.error && data.error != 0 ) {
-			console.log( "Error detected", data.error );
-			data.message = '<TMPL_VAR SECUREPIN.ERROR_WRONG>';
-			console.log( "Message:", data.message );
-			$("#check_hint").attr("style", "color:red").html(data.message);
-			secpin = null;
-			return;
-		}
-		// Save PIN to session storage
-		sessionStorage.setItem("securePIN", $('#securepin').val());
-		secpin = $('#securepin').val();
-		$("#securepin_block").fadeOut();
-		// Get config data
-		getconfig();
-		// $("#main_form").fadeIn();
-		
-	})
-	.always(function( data ) {
-		console.log( "checksecpin Finished" );
-		$("#check_securepin").attr("disabled", false);
-	});
-}
-
-function securePINwrong() {
-	console.log( "checksecpin Fail");
-	$("#check_hint").attr("style", "color:red").html("<TMPL_VAR SECUREPIN.ERROR_GENERIC>");
-	$("#securepin_block").fadeIn();
-	$("#main").css( 'visibility', 'hidden' );
-	return;
-}
-
-// Get Config
-function getconfig() {
-	// Get Config
-	
-	if ( formdahua ) {
-		console.log( "Get Config for DAHUA form" );
-		var form = 'config'; // This will be changed to config.json later on in CGI
-	}
-	if ( formipcam ) {
-		console.log( "Get Config for IPCAM form" );
-		var form = 'config'; // This will be changed to config.json later on in CGI
-	}
-	if ( formmqtt ) {
-		console.log( "Get Config for MQTT form" );
-		var form = 'config'; // This will be changed to config.json later on in CGI
-	}
-	if ( formlog ) {
-		console.log( "Get Config for LOG form" );
-		$("#main").css( 'visibility', 'visible' );
-		$("#securepin_block").css( 'display', 'none' );
-		// No need to fetch config
-		return;
-	}
-		
-	if ( secpin != null ) {
-		// Ajax request
-		$.ajax({ 
-			type: 'POST',
-			data: { ajax: 'getconfig', config: form, secpin: secpin }
 		})
-		.fail(function( data ) {
-			console.log( "getconfig Fail", data );
-		})
-		.done(function( data ) {
-			console.log( "getconfig Success", data );
-			if(data.secpinerror) {
+			.fail(function (data) {
 				securePINwrong();
 				return;
-			}
-			$("#main").css( 'visibility', 'visible' );
+			})
+			.done(function (data) {
+				if (data.error && data.error != 0) {
+					console.log("Error detected", data.error);
+					data.message = '<TMPL_VAR SECUREPIN.ERROR_WRONG>';
+					console.log("Message:", data.message);
+					$("#check_hint").attr("style", "color:red").html(data.message);
+					secpin = null;
+					return;
+				}
+				// Save PIN to session storage
+				sessionStorage.setItem("securePIN", $('#securepin').val());
+				secpin = $('#securepin').val();
+				$("#securepin_block").fadeOut();
+				// Get config data
+				getconfig();
+				// $("#main_form").fadeIn();
 
-			if ( formmqtt ) {
-				console.log( "Parse Item for MQTT form" );
-				// Fill the form with json data retrieved from the ajax getconfig call
-				if ( data.error || jQuery.isEmptyObject(data)) {
-					console.log("config.json is empty, does not exist or is invalid.");
-				}
-				if(data.mqttConfigData.client.id) {
-					$("#MQTTId").val(data.mqttConfigData.client.id);
-				} else {
-					$("#MQTTId").val('DahuaVTO2MQTT');
-				}
-				if(data.mqttConfigData.client.topic_prefix) {
-					$("#MQTTTopic").val(data.mqttConfigData.client.topic_prefix);
-				} else {
-					$("#MQTTTopic").val('DahuaVTO');
-				}
-				if(data.usemqttgateway === "true" || data.usemqttgateway === "1") {
-					$("#MQTTUseMQTTGateway").prop('checked', true).checkboxradio("refresh");
-				} else {
-					$("#MQTTUseMQTTGateway").prop('checked', false).checkboxradio("refresh");
-				}
-				if(data.mqttConfigData.server.ip) {
-					$("#BrokerServer").val(data.mqttConfigData.server.ip);
-				} else {
-					$("#BrokerServer").val('localhost');
-				}
-				if(data.mqttConfigData.server.port) {
-					$("#BrokerPort").val(data.mqttConfigData.server.port);
-				} else {
-					$("#BrokerPort").val('1883');
-				}
-				if(data.mqttConfigData.server.username) {
-					$("#BrokerUsername").val(data.mqttConfigData.server.username);
-				} else {
-					$("#BrokerUsername").val('');
-				}
-				if(data.mqttConfigData.server.password) {
-					$("#BrokerPassword").val(data.mqttConfigData.server.password);
-				} else {
-					$("#BrokerPassword").val('');
-				}
-				refreshMQTTForm();
-			};
-
-			if ( formdahua ) {
-				console.log( "Parse Item for DAHUA form" );
-				// Fill the form with json data retrieved from the ajax getconfig call
-				if ( data.error || jQuery.isEmptyObject(data)) {
-					console.log("config.json is empty, does not exist or is invalid.");
-				}
-				if(data.dahuaConfigData.host.ip) {
-					$("#dahua_host_ip").val(data.dahuaConfigData.host.ip);
-				} else {
-					$("#dahua_host_ip").val('');
-				}
-				if(data.dahuaConfigData.host.username) {
-					$("#dahua_host_username").val(data.dahuaConfigData.host.username);
-				} else {
-					$("#dahua_host_username").val('');
-				}
-				if(data.dahuaConfigData.host.password) {
-					$("#dahua_host_password").val(data.dahuaConfigData.host.password);
-				} else {
-					$("#dahua_host_password").val('');
-				}
-				$(".DAHUA").removeClass("ui-state-disabled");
-			};
-
-			if ( formipcam ) {
-				console.log( "Parse Item for IPCAM form" );
-				// Fill the form with json data retrieved from the ajax getconfig call
-				if ( data.error || jQuery.isEmptyObject(data)) {
-					console.log("config.json is empty, does not exist or is invalid.");
-				}
-				if(data.snapshotConfigData.camConfigData.url) {
-					$("#ipcam_url").val(data.snapshotConfigData.camConfigData.url);
-				} else {
-					$("#ipcam_url").val('');
-				}
-				if(data.snapshotConfigData.camConfigData.user_name) {
-					$("#ipcam_username").val(data.snapshotConfigData.camConfigData.user_name);
-				} else {
-					$("#ipcam_username").val('');
-				}
-				if(data.snapshotConfigData.camConfigData.user_pwd) {
-					$("#ipcam_password").val(data.snapshotConfigData.camConfigData.user_pwd);
-				} else {
-					$("#ipcam_password").val('');
-				}
-				if(data.snapshotConfigData.snapshotTopicSuffix.topic_suffix) {
-					$("#snapshot_topic_suffix").val(data.snapshotConfigData.snapshotTopicSuffix.topic_suffix);
-				} else {
-					$("#snapshot_topic_suffix").val('');
-				}
-				if(data.snapshotConfigData.snapshotTopicSuffix.filename) {
-					$("#snapshot_filename").val(data.snapshotConfigData.snapshotTopicSuffix.filename);
-				} else {
-					$("#snapshot_filename").val('');
-				}
-				if(data.snapshotConfigData.snapshotTopicSuffix.path) {
-					$("#snapshot_path").val(data.snapshotConfigData.snapshotTopicSuffix.path);
-				} else {
-					$("#snapshot_path").val('');
-				}
-				if(data.snapshotConfigData.snapshotTopicSuffix.keep_count) {
-					$("#snapshot_keep_count").val(data.snapshotConfigData.snapshotTopicSuffix.keep_count);
-				} else {
-					$("#snapshot_keep_count").val('');
-				}
-				$(".IPCAM").removeClass("ui-state-disabled");
-			};
-		})
-		.always(function( data ) {
-			console.log( "getconfig Finished" );
-		})
+			})
+			.always(function (data) {
+				console.log("checksecpin Finished");
+				$("#check_securepin").attr("disabled", false);
+			});
 	}
-}
 
-function refreshMQTTForm() {
-	console.log("refreshMQTTForm");
-	$(".MQTT").removeClass("ui-state-disabled");
-	if( $("#MQTTUseMQTTGateway").is(":checked") ) 
-		$(".ownbroker").addClass("ui-state-disabled");
-	else 
-		$(".ownbroker").removeClass("ui-state-disabled");
-}
+	function securePINwrong() {
+		console.log("checksecpin Fail");
+		$("#check_hint").attr("style", "color:red").html("<TMPL_VAR SECUREPIN.ERROR_GENERIC>");
+		$("#securepin_block").fadeIn();
+		$("#main").css('visibility', 'hidden');
+		return;
+	}
 
-$("#MQTTUseMQTTGateway").on("click", refreshMQTTForm);
+	// Get Config
+	function getconfig() {
+		// Get Config
+
+		if (formdahua) {
+			console.log("Get Config for DAHUA form");
+			var form = 'config'; // This will be changed to config.json later on in CGI
+		}
+		if (formipcam) {
+			console.log("Get Config for IPCAM form");
+			var form = 'config'; // This will be changed to config.json later on in CGI
+		}
+		if (formmqtt) {
+			console.log("Get Config for MQTT form");
+			var form = 'config'; // This will be changed to config.json later on in CGI
+		}
+		if (formlog) {
+			console.log("Get Config for LOG form");
+			$("#main").css('visibility', 'visible');
+			$("#securepin_block").css('display', 'none');
+			// No need to fetch config
+			return;
+		}
+
+		if (secpin != null) {
+			// Ajax request
+			$.ajax({
+				type: 'POST',
+				data: { ajax: 'getconfig', config: form, secpin: secpin }
+			})
+				.fail(function (data) {
+					console.log("getconfig Fail", data);
+				})
+				.done(function (data) {
+					console.log("getconfig Success", data);
+					if (data.secpinerror) {
+						securePINwrong();
+						return;
+					}
+					$("#main").css('visibility', 'visible');
+
+					if (formmqtt) {
+						console.log("Parse Item for MQTT form");
+						// Fill the form with json data retrieved from the ajax getconfig call
+						if (data.error || jQuery.isEmptyObject(data)) {
+							console.log("config.json is empty, does not exist or is invalid.");
+						}
+						if (data.mqttConfigData.client.id) {
+							$("#MQTTId").val(data.mqttConfigData.client.id);
+						} else {
+							$("#MQTTId").val('DahuaVTO2MQTT');
+						}
+						if (data.mqttConfigData.client.topic_prefix) {
+							$("#MQTTTopic").val(data.mqttConfigData.client.topic_prefix);
+						} else {
+							$("#MQTTTopic").val('DahuaVTO');
+						}
+						if (data.usemqttgateway === "true" || data.usemqttgateway === "1") {
+							$("#MQTTUseMQTTGateway").prop('checked', true).checkboxradio("refresh");
+						} else {
+							$("#MQTTUseMQTTGateway").prop('checked', false).checkboxradio("refresh");
+						}
+						if (data.mqttConfigData.server.ip) {
+							$("#BrokerServer").val(data.mqttConfigData.server.ip);
+						} else {
+							$("#BrokerServer").val('localhost');
+						}
+						if (data.mqttConfigData.server.port) {
+							$("#BrokerPort").val(data.mqttConfigData.server.port);
+						} else {
+							$("#BrokerPort").val('1883');
+						}
+						if (data.mqttConfigData.server.username) {
+							$("#BrokerUsername").val(data.mqttConfigData.server.username);
+						} else {
+							$("#BrokerUsername").val('');
+						}
+						if (data.mqttConfigData.server.password) {
+							$("#BrokerPassword").val(data.mqttConfigData.server.password);
+						} else {
+							$("#BrokerPassword").val('');
+						}
+						refreshMQTTForm();
+					};
+
+					if (formdahua) {
+						console.log("Parse Item for DAHUA form");
+						// Fill the form with json data retrieved from the ajax getconfig call
+						if (data.error || jQuery.isEmptyObject(data)) {
+							console.log("config.json is empty, does not exist or is invalid.");
+						}
+						if (data.dahuaConfigData.host.ip) {
+							$("#dahua_host_ip").val(data.dahuaConfigData.host.ip);
+						} else {
+							$("#dahua_host_ip").val('');
+						}
+						if (data.dahuaConfigData.host.username) {
+							$("#dahua_host_username").val(data.dahuaConfigData.host.username);
+						} else {
+							$("#dahua_host_username").val('');
+						}
+						if (data.dahuaConfigData.host.password) {
+							$("#dahua_host_password").val(data.dahuaConfigData.host.password);
+						} else {
+							$("#dahua_host_password").val('');
+						}
+						$(".DAHUA").removeClass("ui-state-disabled");
+					};
+
+					if (formipcam) {
+						console.log("Parse Item for IPCAM form");
+						// Fill the form with json data retrieved from the ajax getconfig call
+						if (data.error || jQuery.isEmptyObject(data)) {
+							console.log("config.json is empty, does not exist or is invalid.");
+						}
+						if (data.snapshotConfigData.camConfigData.url) {
+							$("#ipcam_url").val(data.snapshotConfigData.camConfigData.url);
+						} else {
+							$("#ipcam_url").val('');
+						}
+						if (data.snapshotConfigData.camConfigData.user_name) {
+							$("#ipcam_username").val(data.snapshotConfigData.camConfigData.user_name);
+						} else {
+							$("#ipcam_username").val('');
+						}
+						if (data.snapshotConfigData.camConfigData.user_pwd) {
+							$("#ipcam_password").val(data.snapshotConfigData.camConfigData.user_pwd);
+						} else {
+							$("#ipcam_password").val('');
+						}
+						if (data.snapshotConfigData.snapshotTopicSuffix.topic_suffix) {
+							$("#snapshot_topic_suffix").val(data.snapshotConfigData.snapshotTopicSuffix.topic_suffix);
+						} else {
+							$("#snapshot_topic_suffix").val('');
+						}
+						if (data.snapshotConfigData.snapshotTopicSuffix.filename) {
+							$("#snapshot_filename").val(data.snapshotConfigData.snapshotTopicSuffix.filename);
+						} else {
+							$("#snapshot_filename").val('');
+						}
+						if (data.snapshotConfigData.snapshotTopicSuffix.path) {
+							$("#snapshot_path").val(data.snapshotConfigData.snapshotTopicSuffix.path);
+						} else {
+							$("#snapshot_path").val('');
+						}
+						if (data.snapshotConfigData.snapshotTopicSuffix.keep_count) {
+							$("#snapshot_keep_count").val(data.snapshotConfigData.snapshotTopicSuffix.keep_count);
+						} else {
+							$("#snapshot_keep_count").val('');
+						}
+						$(".IPCAM").removeClass("ui-state-disabled");
+					};
+				})
+				.always(function (data) {
+					console.log("getconfig Finished");
+				})
+		}
+	}
+
+	function refreshMQTTForm() {
+		console.log("refreshMQTTForm");
+		$(".MQTT").removeClass("ui-state-disabled");
+		if ($("#MQTTUseMQTTGateway").is(":checked"))
+			$(".ownbroker").addClass("ui-state-disabled");
+		else
+			$(".ownbroker").removeClass("ui-state-disabled");
+	}
+
+	$("#MQTTUseMQTTGateway").on("click", refreshMQTTForm);
 
 </script>
