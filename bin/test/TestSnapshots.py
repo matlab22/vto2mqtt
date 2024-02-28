@@ -11,7 +11,7 @@ def main():
         response = _snap.test_snapshots()
 
         # Print the response
-        print(response)
+        print(f"Response: {response}")
     except Exception as e:
         # Handle exceptions and print an error message
         print(f'Script execution failed: {e}')

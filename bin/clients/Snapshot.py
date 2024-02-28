@@ -153,6 +153,7 @@ class Snapshot():
             for current_topic_suffix in self.topic_suffix:
                 self.get_snapshot(current_topic_suffix=current_topic_suffix)
             response="Test succeed: Check the snapshots in the snapshot folder"
+            _LOGGER.info(response)
 
         except Exception as ex:
             exc_type, exc_obj, exc_tb = sys.exc_info()

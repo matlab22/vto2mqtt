@@ -32,7 +32,7 @@ class MQTTConfigurationData:
                 self.topic_prefix = str(mqttConfigData['client']['topic_prefix'])
                 self.topic_command_prefix = f"{self.topic_prefix}{TOPIC_COMMAND}/"
 
-                _LOGGER.debug(f"Client ID: {self.client_id}, MQTT Server: IP({self.host}), Port({self.port}), Username ({self.username}), Password({self.password})")
+                #_LOGGER.debug(f"Client ID: {self.client_id}, MQTT Server: IP({self.host}), Port({self.port}), Username ({self.username}), Password({self.password})")
 
         except Exception as e:
             _LOGGER.exception(str(e))

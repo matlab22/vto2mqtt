@@ -31,7 +31,7 @@ class DahuaConfigurationData:
 
                 self._auth = HTTPDigestAuth(self.username, self.password)
                 self._base_url = f"{PROTOCOLS[self.is_ssl]}://{self.host}/cgi-bin/"
-                _LOGGER.debug(f"Host IP: {self.host}, Host Username: {self.username}, Host Password: {self.password}")
+                #_LOGGER.debug(f"Host IP: {self.host}, Host Username: {self.username}, Host Password: {self.password}")
 
         except Exception as e:
             _LOGGER.exception(str(e))
