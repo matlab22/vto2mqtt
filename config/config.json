@@ -20,7 +20,7 @@
          "username" : "loxberry"
       },
       "logger" : {
-         "EXPORTER_PORT'" : "9563"
+         "EXPORTER_PORT" : "9563"
       }
    },
    "snapshotConfigData" : {
