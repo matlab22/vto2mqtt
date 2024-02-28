@@ -124,9 +124,9 @@ class Snapshot():
 
             if img_count>1:
                 new_image=self.get_merged_image(img)
-                self.backup_old_and_save_new_image(img=new_image,snapshot_name=snapshot_name,keep_count=self.keep_count)
             else:
                 new_image=img[0]
+            self.backup_old_and_save_new_image(img=new_image,snapshot_name=snapshot_name,keep_count=self.keep_count)
 
 
         except Exception as ex:
