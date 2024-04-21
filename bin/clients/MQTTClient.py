@@ -21,7 +21,7 @@ class MQTTClient(BaseClient):
         super().__init__(CLIENT_MQTT, version, registry, configfile)
 
         self._mqtt_config = MQTTConfigurationData(configfile)
-        self._mqtt_client = mqtt.Client(self._mqtt_config.client_id, clean_session=True)
+        self._mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1,self._mqtt_config.client_id, clean_session=True)
         self._mqtt_client.user_data_set(self)
         self._mqtt_client.username_pw_set(self._mqtt_config.username, self._mqtt_config.password)
 
