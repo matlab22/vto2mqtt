@@ -10,11 +10,13 @@ def main():
         _snap = Snapshot(configfile)
         response = _snap.test_snapshots()
 
-        # Print the response
-        print(f"Response: {response}")
+        # Exit with success code
+        sys.exit(0)
     except Exception as e:
         # Handle exceptions and print an error message
-        print(f'Script execution failed: {e}')
+        print(f'Script execution failed: {e}', file=sys.stderr)
+        # Exit with error code
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

@@ -72,8 +72,9 @@ if( $q->{ajax} ) {
 	#	nosession => 1,
 	#);
 	
-	LOGSTART "P$$ Ajax call: $q->{ajax}";
-	LOGDEB "P$$ Request method: " . $ENV{REQUEST_METHOD};
+	# Don't log to STDOUT for AJAX calls - it breaks JSON responses
+	# LOGSTART "P$$ Ajax call: $q->{ajax}";
+	# LOGDEB "P$$ Request method: " . $ENV{REQUEST_METHOD};
 	
 	## Handle all ajax requests 
 	#require JSON;
@@ -158,8 +159,22 @@ if( $q->{ajax} ) {
 	# Test DAHUA Settings
 	if( $q->{ajax} eq "testdahua" ) {
 		LOGINF "P$$ testdahua: testdahua was called.";
-		$response{error} = 0;
-		system("$lbpbindir/dahuagrabber.pl --logfile=test.log --verbose --test --token=$q->{'token'} --account=$q->{'account'} > /dev/null 2>&1");
+		my $token = $q->{'token'} // '';
+		my $account = $q->{'account'} // '';
+		
+		# Execute grabber script and capture exit code
+		my $exit_code = system("$lbpbindir/dahuagrabber.pl", "--logfile=test.log", "--verbose", "--test", "--token=$token", "--account=$account");
+		
+		if ($exit_code == 0) {
+			# Script executed successfully
+			$response{error} = 0;
+			$response{message} = "DAHUA connection test successful";
+		} else {
+			# Script execution failed
+			$response{error} = 1;
+			$response{message} = "DAHUA connection test failed";
+		}
+		
 		print JSON->new->canonical(1)->encode(\%response);
 	}
 
@@ -171,20 +186,20 @@ if( $q->{ajax} ) {
 		my $python_script = "/usr/bin/python3";  # Path to Python interpreter
 		my $python_path = "$lbpbindir/test/TestSnapshots.py";
 		my $logfile = "test.log";
-		my $token = $q->{'token'};
-		my $account = $q->{'account'};
+		my $token = $q->{'token'} // '';
+		my $account = $q->{'account'} // '';
 
-		my $command = "$python_script $python_path --logfile $logfile --verbose --test --token=$token --account=$account 2>&1";
-		my $output = `$command`;
+		# Use system() with list form to avoid shell injection
+		my $exit_code = system($python_script, $python_path, "--logfile", $logfile, "--verbose", "--test", "--token=$token", "--account=$account");
 
-		if ($? == 0) {
+		if ($exit_code == 0) {
 			# Script executed successfully
 			$response{error} = 0;
-			$response{message} = "Script executed successfully";
+			$response{message} = "Snapshots fetched successfully";
 		} else {
 			# Script execution failed
 			$response{error} = 1;
-			$response{message} = "Script execution failed: $output";
+			$response{message} = "Failed to fetch snapshots";
 		}
 
 		print JSON->new->canonical(1)->encode(\%response);
@@ -336,10 +351,8 @@ sub checksecpin
 
 sub savemqtt
 {
-	my $errors;
+	my $errors = '';
 	my $jsonobj = LoxBerry::JSON->new();
-	my $jsonobjcred = LoxBerry::JSON->new();
-	my $jsonobjcfg = LoxBerry::JSON->new();
 	my $mqttplugindata = LoxBerry::System::plugindata("mqttgateway");
 	my $cfg = $jsonobj->open(filename => $CFGFILE);
 	$cfg->{mqttConfigData}->{client}->{id} = $q->{mqttid};
@@ -348,9 +361,11 @@ sub savemqtt
 	$cfg->{mqttConfigData}->{server}->{usemqttgateway} = $q->{usemqttgateway};
 	# Get MQTT Gateway credentials
 	if ( is_enabled($q->{usemqttgateway}) ) {
+		my $jsonobjcred = LoxBerry::JSON->new();
 		my $gwcred = $jsonobjcred->open(filename => $lbhomedir . "/config/plugins/" . $mqttplugindata->{PLUGINDB_FOLDER} . "/cred.json");
 		$q->{brokeruser} = $gwcred->{Credentials}->{brokeruser};
 		$q->{brokerpassword} = $gwcred->{Credentials}->{brokerpass};
+		my $jsonobjcfg = LoxBerry::JSON->new();
 		my $gwcfg = $jsonobjcfg->open(filename => $lbhomedir . "/config/plugins/" . $mqttplugindata->{PLUGINDB_FOLDER} . "/mqtt.json");
 		if ( $gwcfg->{Main}->{brokeraddress} =~ /:/ ) {
 			my ($broker,$port) = split (/:/,$gwcfg->{Main}->{brokeraddress});
@@ -389,44 +404,50 @@ sub savemqtt
 
 sub savedahua
 {
-	my $errors;
+	my $errors = '';
 	my $jsonobj = LoxBerry::JSON->new();
 	my $cfg = $jsonobj->open(filename => $CFGFILE);
+	# Validate IP address format
+	if ($q->{dahua_host_ip} && $q->{dahua_host_ip} !~ /^[\w\-.]+$/) {
+		LOGERR "P$$ savedahua: Invalid host IP format: $q->{dahua_host_ip}";
+		$errors = "Invalid host IP format";
+		return ($errors);
+	}
 	$cfg->{dahuaConfigData}->{host}->{ip} = $q->{dahua_host_ip};
 	$cfg->{dahuaConfigData}->{host}->{username} = $q->{dahua_host_username};
 	$cfg->{dahuaConfigData}->{host}->{password} = $q->{dahua_host_password};
 	$jsonobj->write();
-	system("$lbpbindir/wrapper.sh restart"); #restarts plugin
+	system("$lbpbindir/wrapper.sh", "restart"); #restarts plugin
 	return ($errors);
 }
 
 sub saveipcam
 {
-	my $errors;
+	my $errors = '';
 	my $jsonobj = LoxBerry::JSON->new();
 	my $cfg = $jsonobj->open(filename => $CFGFILE);
 	#save source data
-	my @values=split(',',$q->{'ipcam_url'});
-	$cfg->{snapshotConfigData}->{camConfigData}->{url} = \@values;
-	my @values=split(',',$q->{'ipcam_username'});
-	$cfg->{snapshotConfigData}->{camConfigData}->{user_name} = \@values;
-	my @values=split(',',$q->{'ipcam_password'});
-	$cfg->{snapshotConfigData}->{camConfigData}->{user_pwd} = \@values;
+	my @urls = split(',',$q->{'ipcam_url'} // '');
+	$cfg->{snapshotConfigData}->{camConfigData}->{url} = \@urls;
+	my @usernames = split(',',$q->{'ipcam_username'} // '');
+	$cfg->{snapshotConfigData}->{camConfigData}->{user_name} = \@usernames;
+	my @passwords = split(',',$q->{'ipcam_password'} // '');
+	$cfg->{snapshotConfigData}->{camConfigData}->{user_pwd} = \@passwords;
 	#save snapshot config data
-	my @values=split(',',$q->{'snapshot_topic_suffix'});
-	$cfg->{snapshotConfigData}->{snapshotTopicSuffix}->{topic_suffix} = \@values;
-	my @values=split(',',$q->{'snapshot_filename'});
-	$cfg->{snapshotConfigData}->{snapshotTopicSuffix}->{filename} = \@values;
+	my @suffixes = split(',',$q->{'snapshot_topic_suffix'} // '');
+	$cfg->{snapshotConfigData}->{snapshotTopicSuffix}->{topic_suffix} = \@suffixes;
+	my @filenames = split(',',$q->{'snapshot_filename'} // '');
+	$cfg->{snapshotConfigData}->{snapshotTopicSuffix}->{filename} = \@filenames;
 	$cfg->{snapshotConfigData}->{snapshotTopicSuffix}->{path} = $q->{snapshot_path};
 	$cfg->{snapshotConfigData}->{snapshotTopicSuffix}->{keep_count} = $q->{snapshot_keep_count};
 
 	$jsonobj->write();
-	system("$lbpbindir/wrapper.sh restart"); #restarts plugin
+	system("$lbpbindir/wrapper.sh", "restart"); #restarts plugin
 	return ($errors);
 }
 
 END {
-	if($log) {
+	if(defined $log && $log) {
 		LOGEND;
 	}
 }

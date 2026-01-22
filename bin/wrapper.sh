@@ -3,8 +3,10 @@
 PLUGINNAME=REPLACELBPPLUGINDIR
 PATH="/sbin:/bin:/usr/sbin:/usr/bin:$LBHOMEDIR/bin:$LBHOMEDIR/sbin"
 
-ENVIRONMENT=$(cat /etc/environment)
-export $ENVIRONMENT
+# Source environment variables
+set -a
+source /etc/environment
+set +a
 
 # Logfile
 . $LBHOMEDIR/libs/bashlib/loxberry_log.sh
@@ -42,7 +44,18 @@ case "$1" in
 	fi
 
 	LOGINF "Starting vto2mqtt..."
-	$LBHOMEDIR/bin/plugins/${PLUGINNAME}/DahuaVTO.py --logfile ${FILENAME} --loglevel ${LOGLEVEL} --configfile $LBHOMEDIR/config/plugins/${PLUGINNAME}/config.json --lbhomedir $LBHOMEDIR > /dev/null 2>&1 &
+	$LBHOMEDIR/bin/plugins/${PLUGINNAME}/DahuaVTO.py \
+  --logfile ${FILENAME} \
+  --loglevel ${LOGLEVEL} \
+  --configfile $LBHOMEDIR/config/plugins/${PLUGINNAME}/config.json \
+  --lbhomedir $LBHOMEDIR >> ${FILENAME} 2>&1 &
+
+	sleep 1
+	if [ "$(pgrep -f "$LBHOMEDIR/bin/plugins/${PLUGINNAME}/DahuaVTO.py")" ]; then
+		LOGOK "DahuaVTO.py started successfully."
+	else
+		LOGERR "DahuaVTO.py failed to start."
+	fi
 
 	LOGEND "vto2mqtt"
     exit 0

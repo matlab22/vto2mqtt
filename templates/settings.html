@@ -607,11 +607,6 @@
 		// <TMPL_IF MQTTGATEWAY_PLUGINDBFOLDER>
 		$("#mqtt_onverviewlink").html('<a href="http://' + window.location.host + '/admin/plugins/mqttgateway/index.cgi?form=topics" target="_blank"><TMPL_VAR MQTT.LABEL_MQTT_GATEWAY_LINK></a>');
 		// </TMPL_IF>
-
-		// <TMPL_IF FORM_IPCAM>
-		snapshots = $('#snapshot_filename').val().split(",");
-		snapshots.forEach((name, index) => add_snapshots(name, index));
-		// </TMPL_IF>
 	});
 
 	// Get Images for IPCAM snapshots
@@ -626,7 +621,7 @@
 				$(data).find("a:contains(" + fileextension + "):contains(" + name + ")").each(function () {
 					var filename = this.href
 					filename = filename.replace(window.location.host, "").replace('/admin/plugins/vto2mqtt/', "").replace("http://", "");
-					img_element = '<a href=' + snapshot_url + filename + '><img src="' + snapshot_url + filename + '"alt="' + filename + '"width=400px height=450px ></a>';
+					img_element = '<a href=' + snapshot_url + filename + '><img src="' + snapshot_url + filename + '"alt="' + filename + '"width=400px height=450px onload="$(window).trigger(\'resize\');"></a>';
 					if (snapshots.includes(filename.replace(fileextension, ""))) {
 						console.info(window.location.host + snapshot_url + filename);
 						$('#snapshot_caption_' + `${index + 1}`).append(filename);
@@ -642,6 +637,25 @@
 			}
 		});
 
+	}
+
+	// Refresh IPCAM snapshots
+	function refresh_snapshots() {
+		// Clear existing snapshots
+		for (let i = 1; i <= 5; i++) {
+			$('#snapshot_caption_' + i).html('');
+			$('#snapshot_' + i).html('');
+			$('#snapshot_arch_' + i).html('');
+		}
+		// Reload snapshots
+		var filenames = $('#snapshot_filename').val();
+		if (filenames) {
+			snapshots = filenames.split(",");
+			snapshots.forEach((name, index) => add_snapshots(name, index));
+		} else {
+			// Trigger layout recalculation if no snapshots
+			$(window).trigger('resize');
+		}
 	}
 
 	// Save MQTT Settings
@@ -756,6 +770,7 @@
 
 		$.ajax({
 			type: 'POST',
+			dataType: 'json',
 			data: {
 				ajax: 'testipcam',
 				token: $('#token').val(),
@@ -765,13 +780,53 @@
 		})
 			.fail(function (data) {
 				console.log("testipcam Fail", data);
+				$("#ipcam_hint").attr("style", "color:red").html("AJAX Error: " + data.statusText);
 			})
 			.done(function (data) {
-				console.log("testipcam Success: ", data);
-				$("#ipcam_hint").html("");
+				console.log("testipcam Success - Full response:", data);
+				console.log("testipcam data.error:", data.error);
+				console.log("testipcam data.message:", data.message);
+				if (data.error) {
+					$("#ipcam_hint").attr("style", "color:red").html("Error: " + (data.message || "<TMPL_VAR IPCAM.HINT_TEST_FAILED>"));
+				} else {
+					$("#ipcam_hint").attr("style", "color:green").html(data.message || "<TMPL_VAR IPCAM.HINT_TEST_OK>");
+					refresh_snapshots();
+				}
 			})
 			.always(function (data) {
 				console.log("testipcam Finished");
+			});
+	}
+
+	// Test DAHUA Connection
+	function testdahua() {
+		console.log("Testing DAHUA connection");
+		$("#dahua_hint").attr("style", "color:blue").html("<TMPL_VAR DAHUA.HINT_TEST_WAIT>");
+
+		$.ajax({
+			type: 'POST',
+			dataType: 'json',
+			data: {
+				ajax: 'testdahua',
+				token: $('#token').val(),
+				account: $('#account').val(),
+				secpin: secpin
+			}
+		})
+			.fail(function (data) {
+				console.log("testdahua Fail", data);
+				$("#dahua_hint").attr("style", "color:red").html("<TMPL_VAR DAHUA.HINT_TEST_ERROR>");
+			})
+			.done(function (data) {
+				console.log("testdahua Success: ", data);
+				if (data.error) {
+					$("#dahua_hint").attr("style", "color:red").html("Error: " + (data.message || "<TMPL_VAR DAHUA.HINT_TEST_FAILED>"));
+				} else {
+					$("#dahua_hint").attr("style", "color:green").html(data.message || "<TMPL_VAR DAHUA.HINT_TEST_OK>");
+				}
+			})
+			.always(function (data) {
+				console.log("testdahua Finished");
 			});
 	}
 
@@ -973,6 +1028,14 @@
 							$("#snapshot_keep_count").val('');
 						}
 						$(".IPCAM").removeClass("ui-state-disabled");
+						// Load snapshots after form is visible and populated
+						setTimeout(() => {
+							var filenames = $('#snapshot_filename').val();
+							if (filenames) {
+								snapshots = filenames.split(",");
+								snapshots.forEach((name, index) => add_snapshots(name, index));
+							}
+						}, 100);
 					};
 				})
 				.always(function (data) {
