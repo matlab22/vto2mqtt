@@ -53,6 +53,7 @@ class DahuaAPI(asyncio.Protocol):
             TOPIC_DOOR: self.access_control_open_door,
             TOPIC_MUTE: self.run_cmd_mute
         }
+        self._rx_buffer = bytearray()
 
         self._loop = asyncio.get_event_loop()
         self.outgoing_events = outgoing_events
@@ -89,18 +90,29 @@ class DahuaAPI(asyncio.Protocol):
     def data_received(self, data):
         try:
             _LOGGER.debug(f"Received data, Raw Data: {data}")
-            messages = parse_data(data)
 
-            for message_data in messages:
-                message = parse_message(message_data)
+            self._rx_buffer.extend(data)
 
-                if message is not None:
+            for message in self._extract_messages():
+                try:
                     _LOGGER.debug(f"Handling message: {message}")
 
                     message_id = message.get("id")
 
                     handler: Callable = self.data_handlers.get(message_id, self.handle_default)
                     handler(message)
+
+                except Exception as ex:
+                    exc_type, exc_obj, exc_tb = sys.exc_info()
+
+                    _LOGGER.error(
+                        f"Failed to dispatch message, "
+                        f"Message: {message}, "
+                        f"Error: {ex}, "
+                        f"Line: {exc_tb.tb_lineno}"
+                    )
+
+                    self._set_message_metrics(METRIC_DAHUA_FAILED_MESSAGES, [self.sessionId, "incoming"])
 
         except Exception as ex:
             exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -113,6 +125,74 @@ class DahuaAPI(asyncio.Protocol):
             )
 
             self._set_message_metrics(METRIC_DAHUA_FAILED_MESSAGES, [self.sessionId, "incoming"])
+
+    def _extract_messages(self):
+        """Yield complete JSON messages from the rx buffer.
+
+        Dahua DHIP wraps each JSON payload in a 32-byte binary header,
+        but TCP can split a single payload across multiple ``data_received``
+        calls. Rather than trusting the header's length field (which varies
+        between firmwares), we scan the buffer for balanced top-level JSON
+        objects and yield each one as it becomes complete. Anything before
+        the next ``{`` (DHIP header bytes, etc.) is discarded.
+        """
+        while True:
+            start = self._rx_buffer.find(b'{')
+            if start < 0:
+                # No JSON start in buffer - drop everything (binary header
+                # leftovers) and wait for more data.
+                self._rx_buffer.clear()
+                return
+
+            # Drop everything before the JSON start (DHIP header etc.)
+            if start > 0:
+                del self._rx_buffer[:start]
+
+            depth = 0
+            in_string = False
+            escape = False
+            end = -1
+
+            for i, b in enumerate(self._rx_buffer):
+                ch = chr(b)
+
+                if escape:
+                    escape = False
+                    continue
+
+                if in_string:
+                    if ch == '\\':
+                        escape = True
+                    elif ch == '"':
+                        in_string = False
+                    continue
+
+                if ch == '"':
+                    in_string = True
+                elif ch == '{':
+                    depth += 1
+                elif ch == '}':
+                    depth -= 1
+                    if depth == 0:
+                        end = i
+                        break
+
+            if end < 0:
+                # Incomplete JSON - wait for more data
+                return
+
+            payload = bytes(self._rx_buffer[:end + 1])
+            del self._rx_buffer[:end + 1]
+
+            try:
+                yield json.loads(payload.decode('utf-8', errors='replace'))
+            except Exception as ex:
+                _LOGGER.error(
+                    f"Failed to parse JSON message, "
+                    f"Data: {payload}, "
+                    f"Error: {ex}"
+                )
+                self._set_message_metrics(METRIC_DAHUA_FAILED_MESSAGES, [self.sessionId, "incoming"])
 
     def handle_notify_event_stream(self, params):
         try:
