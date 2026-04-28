@@ -43,7 +43,7 @@ class DahuaClient(BaseClient):
                                 self.set_message_metrics
                     ),
                     self.dahua_config.host,
-                    5000
+                    self.dahua_config.port
                 )
 
                 loop.run_until_complete(client)

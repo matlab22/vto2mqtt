@@ -127,6 +127,13 @@ if( $q->{ajax} ) {
 		print JSON->new->canonical(1)->encode(\%response);
 	}
 
+	# Restart plugin after loglevel changes
+	if( $q->{ajax} eq "restartplugin" ) {
+		LOGINF "P$$ restartplugin: restartplugin was called.";
+		$response{error} = &restartplugin();
+		print JSON->new->canonical(1)->encode(\%response);
+	}
+
 	# Get config
 	if( $q->{ajax} eq "getconfig" ) {
 		LOGINF "P$$ getconfig: Getconfig was called.";
@@ -407,13 +414,20 @@ sub savedahua
 	my $errors = '';
 	my $jsonobj = LoxBerry::JSON->new();
 	my $cfg = $jsonobj->open(filename => $CFGFILE);
+	my $port = $q->{dahua_host_port} // '5000';
 	# Validate IP address format
 	if ($q->{dahua_host_ip} && $q->{dahua_host_ip} !~ /^[\w\-.]+$/) {
 		LOGERR "P$$ savedahua: Invalid host IP format: $q->{dahua_host_ip}";
 		$errors = "Invalid host IP format";
 		return ($errors);
 	}
+	if ($port !~ /^\d+$/ || $port < 1 || $port > 65535) {
+		LOGERR "P$$ savedahua: Invalid port: $port";
+		$errors = "Invalid port";
+		return ($errors);
+	}
 	$cfg->{dahuaConfigData}->{host}->{ip} = $q->{dahua_host_ip};
+	$cfg->{dahuaConfigData}->{host}->{port} = $port;
 	$cfg->{dahuaConfigData}->{host}->{username} = $q->{dahua_host_username};
 	$cfg->{dahuaConfigData}->{host}->{password} = $q->{dahua_host_password};
 	$jsonobj->write();
@@ -443,6 +457,13 @@ sub saveipcam
 
 	$jsonobj->write();
 	system("$lbpbindir/wrapper.sh", "restart"); #restarts plugin
+	return ($errors);
+}
+
+sub restartplugin
+{
+	my $errors = '';
+	system("$lbpbindir/wrapper.sh", "restart");
 	return ($errors);
 }
 

@@ -126,6 +126,24 @@
 
 			<div class="lb_flex-container DAHUA ui-state-disabled">
 				<div class="lb_flex-item-label">
+					<label class="control-label" for="dahua_host_port">
+						TCP Port
+					</label>
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item">
+					<input width="100%" value="" id="dahua_host_port" name="dahua_host_port" type="number"
+						class="textfield" min="1" max="65535" step="1">
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+				<div class="lb_flex-item-help hint">
+					TCP/API port of your Dahua device, for example 5000 or 37777.
+				</div>
+				<div class="lb_flex-item-spacer"></div>
+			</div>
+
+			<div class="lb_flex-container DAHUA ui-state-disabled">
+				<div class="lb_flex-item-label">
 					<label class="control-label" for="dahua_host_username">
 						<TMPL_VAR DAHUA.LABEL_DAHUA_HOST_USERNAME>
 					</label>
@@ -607,12 +625,35 @@
 		// <TMPL_IF MQTTGATEWAY_PLUGINDBFOLDER>
 		$("#mqtt_onverviewlink").html('<a href="http://' + window.location.host + '/admin/plugins/mqttgateway/index.cgi?form=topics" target="_blank"><TMPL_VAR MQTT.LABEL_MQTT_GATEWAY_LINK></a>');
 		// </TMPL_IF>
+
+		if (formlog) {
+			$(document).on('change', 'select[id^="loglevel_"]', function () {
+				window.setTimeout(restartPluginAfterLoglevelChange, 300);
+			});
+		}
 	});
 
+	function restartPluginAfterLoglevelChange() {
+		$.ajax({
+			type: 'POST',
+			data: { ajax: 'restartplugin', secpin: secpin }
+		})
+			.fail(function (data) {
+				console.log("restartplugin Fail", data);
+			})
+			.done(function (data) {
+				console.log("restartplugin Success", data);
+				if (data.secpinerror) {
+					securePINwrong();
+				}
+			});
+	}
+
 	// Get Images for IPCAM snapshots
-	function add_snapshots(name, index) {
+	function add_snapshots(name, index, force_refresh) {
 		var snapshot_url = '/plugins/vto2mqtt/snapshot/';
 		var fileextension = ".jpg";
+		var cache_buster = force_refresh ? ('?_=' + Date.now()) : '';
 		//console.info({snapshot_url});
 
 		$.ajax({
@@ -621,7 +662,8 @@
 				$(data).find("a:contains(" + fileextension + "):contains(" + name + ")").each(function () {
 					var filename = this.href
 					filename = filename.replace(window.location.host, "").replace('/admin/plugins/vto2mqtt/', "").replace("http://", "");
-					img_element = '<a href=' + snapshot_url + filename + '><img src="' + snapshot_url + filename + '"alt="' + filename + '"width=400px height=450px onload="$(window).trigger(\'resize\');"></a>';
+					var snapshot_file_url = snapshot_url + filename + cache_buster;
+					img_element = '<a href=' + snapshot_file_url + '><img src="' + snapshot_file_url + '"alt="' + filename + '"width=400px height=450px onload="$(window).trigger(\'resize\');"></a>';
 					if (snapshots.includes(filename.replace(fileextension, ""))) {
 						console.info(window.location.host + snapshot_url + filename);
 						$('#snapshot_caption_' + `${index + 1}`).append(filename);
@@ -640,7 +682,7 @@
 	}
 
 	// Refresh IPCAM snapshots
-	function refresh_snapshots() {
+	function refresh_snapshots(force_refresh) {
 		// Clear existing snapshots
 		for (let i = 1; i <= 5; i++) {
 			$('#snapshot_caption_' + i).html('');
@@ -651,7 +693,7 @@
 		var filenames = $('#snapshot_filename').val();
 		if (filenames) {
 			snapshots = filenames.split(",");
-			snapshots.forEach((name, index) => add_snapshots(name, index));
+			snapshots.forEach((name, index) => add_snapshots(name, index, force_refresh));
 		} else {
 			// Trigger layout recalculation if no snapshots
 			$(window).trigger('resize');
@@ -697,12 +739,13 @@
 	// Save DAHUA Settings
 	function savedahua() {
 		$("#dahua_hint").attr("style", "color:blue").html("<TMPL_VAR DAHUA.HINT_SAVE_SAVING>");
-		console.log("Saving", $('#dahua_host_ip').val(), $('#dahua_host_username').val(), $('#dahua_host_password').val());
+		console.log("Saving", $('#dahua_host_ip').val(), $('#dahua_host_port').val(), $('#dahua_host_username').val(), $('#dahua_host_password').val());
 		$.ajax({
 			type: 'POST',
 			data: {
 				ajax: 'savedahua',
 				dahua_host_ip: $('#dahua_host_ip').val(),
+				dahua_host_port: $('#dahua_host_port').val(),
 				dahua_host_username: $('#dahua_host_username').val(),
 				dahua_host_password: $('#dahua_host_password').val(),
 				secpin: secpin
@@ -790,7 +833,7 @@
 					$("#ipcam_hint").attr("style", "color:red").html("Error: " + (data.message || "<TMPL_VAR IPCAM.HINT_TEST_FAILED>"));
 				} else {
 					$("#ipcam_hint").attr("style", "color:green").html(data.message || "<TMPL_VAR IPCAM.HINT_TEST_OK>");
-					refresh_snapshots();
+					refresh_snapshots(true);
 				}
 			})
 			.always(function (data) {
@@ -973,6 +1016,11 @@
 						} else {
 							$("#dahua_host_ip").val('');
 						}
+						if (data.dahuaConfigData.host.port) {
+							$("#dahua_host_port").val(data.dahuaConfigData.host.port);
+						} else {
+							$("#dahua_host_port").val('5000');
+						}
 						if (data.dahuaConfigData.host.username) {
 							$("#dahua_host_username").val(data.dahuaConfigData.host.username);
 						} else {
@@ -1030,11 +1078,7 @@
 						$(".IPCAM").removeClass("ui-state-disabled");
 						// Load snapshots after form is visible and populated
 						setTimeout(() => {
-							var filenames = $('#snapshot_filename').val();
-							if (filenames) {
-								snapshots = filenames.split(",");
-								snapshots.forEach((name, index) => add_snapshots(name, index));
-							}
+							refresh_snapshots(false);
 						}, 100);
 					};
 				})
