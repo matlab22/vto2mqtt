@@ -46,9 +46,17 @@ class DahuaClient(BaseClient):
                     self.dahua_config.port
                 )
 
-                loop.run_until_complete(client)
-                loop.run_forever()
-                loop.close()
+                transport, protocol = loop.run_until_complete(client)
+
+                try:
+                    loop.run_forever()
+                finally:
+                    # Ensure transport is closed before closing the loop
+                    if transport is not None and not transport.is_closing():
+                        transport.close()
+                    # Give the loop a moment to process the close
+                    loop.run_until_complete(loop.shutdown_asyncgens())
+                    loop.close()
 
             except Exception as ex:
                 self._set_status(False)

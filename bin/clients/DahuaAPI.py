@@ -9,6 +9,8 @@ from typing import Optional, Dict, Any, Callable
 
 import requests
 
+LOGIN_TIMEOUT_SECONDS = 30
+
 from common.consts import *
 from common.utils import parse_data, parse_message, get_hashed_password
 from models.DahuaConfigData import DahuaConfigurationData
@@ -54,6 +56,8 @@ class DahuaAPI(asyncio.Protocol):
             TOPIC_MUTE: self.run_cmd_mute
         }
         self._rx_buffer = bytearray()
+        self._keep_alive_timer: Optional[Timer] = None
+        self._login_timeout_timer: Optional[Timer] = None
 
         self._loop = asyncio.get_event_loop()
         self.outgoing_events = outgoing_events
@@ -220,14 +224,30 @@ class DahuaAPI(asyncio.Protocol):
     def handle_default(self, message):
         _LOGGER.info(f"Data received without handler: {message}")
 
+    def _cancel_timers(self):
+        if self._keep_alive_timer is not None:
+            self._keep_alive_timer.cancel()
+            self._keep_alive_timer = None
+        if self._login_timeout_timer is not None:
+            self._login_timeout_timer.cancel()
+            self._login_timeout_timer = None
+
+    def _close_transport(self):
+        if self.transport is not None and not self.transport.is_closing():
+            self.transport.close()
+
     def eof_received(self):
         _LOGGER.info('Server sent EOF message')
 
+        self._cancel_timers()
+        self._close_transport()
         self._loop.stop()
 
     def connection_lost(self, exc):
-        _LOGGER.error('server closed the connection')
+        _LOGGER.error(f'Server closed the connection, exc: {exc}')
 
+        self._cancel_timers()
+        self._close_transport()
         self._loop.stop()
 
     def send(self, action, handler, params=None):
@@ -269,8 +289,19 @@ class DahuaAPI(asyncio.Protocol):
 
         return message
 
+    def _on_login_timeout(self):
+        _LOGGER.error(f"Login did not complete within {LOGIN_TIMEOUT_SECONDS}s, forcing disconnect")
+        self._cancel_timers()
+        self._close_transport()
+        self._loop.stop()
+
     def pre_login(self):
         _LOGGER.debug("Prepare pre-login message")
+
+        # Start login timeout - if login doesn't finish in time, tear down
+        self._login_timeout_timer = Timer(LOGIN_TIMEOUT_SECONDS, self._on_login_timeout)
+        self._login_timeout_timer.daemon = True
+        self._login_timeout_timer.start()
 
         def handle_pre_login(message):
             error = message.get("error")
@@ -304,6 +335,11 @@ class DahuaAPI(asyncio.Protocol):
             keep_alive_interval = params.get("keepAliveInterval")
 
             if keep_alive_interval is not None:
+                # Login succeeded - cancel login timeout
+                if self._login_timeout_timer is not None:
+                    self._login_timeout_timer.cancel()
+                    self._login_timeout_timer = None
+
                 self._set_status(True)
 
                 self.keep_alive_interval = keep_alive_interval - 5
@@ -314,7 +350,9 @@ class DahuaAPI(asyncio.Protocol):
                 self.load_device_type()
                 self.attach_event_manager()
 
-                Timer(self.keep_alive_interval, self.keep_alive).start()
+                self._keep_alive_timer = Timer(self.keep_alive_interval, self.keep_alive)
+                self._keep_alive_timer.daemon = True
+                self._keep_alive_timer.start()
 
         password = get_hashed_password(
             self.random,
@@ -422,7 +460,9 @@ class DahuaAPI(asyncio.Protocol):
         _LOGGER.debug("Keep alive")
 
         def handle_keep_alive(message):
-            Timer(self.keep_alive_interval, self.keep_alive).start()
+            self._keep_alive_timer = Timer(self.keep_alive_interval, self.keep_alive)
+            self._keep_alive_timer.daemon = True
+            self._keep_alive_timer.start()
 
         request_data = {
             "timeout": self.keep_alive_interval,
