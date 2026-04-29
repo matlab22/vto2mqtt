@@ -1,95 +1,112 @@
 import asyncio
+from collections.abc import Callable
+from copy import copy
 import json
 import logging
 import queue
-import struct
 import sys
 from threading import Timer
-from typing import Optional, Dict, Any, Callable
+from typing import Optional
 
-import requests
+from common.consts import (
+    CONCAT_ACTION_MESSAGE,
+    DAHUA_DEVICE_TYPE,
+    DAHUA_SERIAL_NUMBER,
+    MAX_MESSAGES_IN_BULK,
+)
+from common.enums import DahuaRPC, DeviceCommand, MetricType
+from common.utils import convert_message, get_hashed_password
+from models.DahuaDevice import DahuaDevice
 
 LOGIN_TIMEOUT_SECONDS = 30
-
-from common.consts import *
-from common.utils import parse_data, parse_message, get_hashed_password
-from models.DahuaConfigData import DahuaConfigurationData
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class DahuaAPI(asyncio.Protocol):
-    dahua_config: DahuaConfigurationData
-
-    requestId: int
-    sessionId: int
-    keep_alive_interval: int
-    realm: Optional[str]
-    random: Optional[str]
-    dahua_details: Dict[str, Any]
-    hold_time: int
-    lock_status: Dict[int, bool]
-    data_handlers: Dict[Any, Callable[[Any, str], None]]
-    event_handlers: Dict[str, Callable[[dict], None]]
-
     def __init__(self,
                  outgoing_events: queue.Queue,
-                 dahua_config: DahuaConfigurationData,
+                 device: DahuaDevice,
+                 rpc_endpoints: dict,
                  set_api,
                  set_status,
                  set_message_metrics):
 
-        self.dahua_config = dahua_config
-        self.dahua_details = {}
+        super().__init__()
 
-        self.realm = None
-        self.random = None
-        self.request_id = 1
-        self.sessionId = 0
-        self.keep_alive_interval = 0
-        self.transport = None
-        self.hold_time = 0
-        self.lock_status = {}
-        self.data_handlers = {}
-        self.event_handlers = {
-            TOPIC_DOOR: self.access_control_open_door,
-            TOPIC_MUTE: self.run_cmd_mute
+        self._device = device
+        self._rpc_endpoints = rpc_endpoints
+
+        self._realm = None
+        self._random = None
+        self._request_id = 1
+        self._session_id = 0
+        self._keep_alive_interval = 0
+        self._transport = None
+
+        self._commands = {
+            DeviceCommand.OPEN_DOOR: self._access_control_open_door,
+            DeviceCommand.MUTE: self._run_cmd_mute
         }
+
+        self._rpc_handlers: dict[str, Callable[[dict], None]] = {
+            DahuaRPC.LOGIN: self._handle_authenticate,
+            DahuaRPC.EVENT_STREAM: self._handle_attach_event_manager,
+            DahuaRPC.GET_SOFTWARE_VERSION: self._handle_generic_config_data,
+            DahuaRPC.GET_DEVICE_TYPE: self._handle_generic_config_data,
+            DahuaRPC.ACCESS_CONTROL_FACTORY_INSTANCE: self._handle_generic_config_data,
+            DahuaRPC.GET_CONFIG: self._handle_config_data,
+            DahuaRPC.SYSTEM_MULTI_CALL: self._process_multiple,
+            DahuaRPC.GET_SYSTEM_INFO_NEW: self._handle_generic_config_data,
+            DahuaRPC.GET_SERIAL_NUMBER: self._handle_generic_config_data,
+            DahuaRPC.KEEPALIVE: self._handle_keep_alive
+        }
+
+        self._message_extenders: dict[DahuaRPC, Callable[[dict], None]] = {
+            DahuaRPC.OPEN_DOOR: self._extend_access_control_message
+        }
+
+        self._request_queue: dict[int, dict] = {}
+
         self._rx_buffer = bytearray()
         self._keep_alive_timer: Optional[Timer] = None
         self._login_timeout_timer: Optional[Timer] = None
 
         self._loop = asyncio.get_event_loop()
-        self.outgoing_events = outgoing_events
+        self._outgoing_events = outgoing_events
         self._set_status = set_status
         self._set_message_metrics = set_message_metrics
+        self._session_password = None
+
+        self._can_publish = False
+        self._pending_delivery_items: list[dict] = []
 
         set_api(self)
 
-    def handle_action(self, topic: str, payload: dict):
+    def execute_command(self, topic: str, payload: dict):
         try:
-            if topic in self.event_handlers:
-                action = self.event_handlers[topic]
-                action(payload)
+            device_command = DeviceCommand(topic)
+
+            if device_command in self._commands:
+                command = self._commands[device_command]
+                command(payload)
             else:
-                _LOGGER.warning(f"No MQTT message handler for {topic}, Payload: {payload}")
+                _LOGGER.warning(f"No command available for {topic}, Payload: {payload}")
+
         except Exception as ex:
             exc_type, exc_obj, exc_tb = sys.exc_info()
-
-            _LOGGER.error(f"Failed to handle callback, error: {ex}, Line: {exc_tb.tb_lineno}")
+            _LOGGER.error(f"Failed to execute command, Error: {ex}, Line: {exc_tb.tb_lineno}")
 
     def connection_made(self, transport):
         _LOGGER.debug("Connection established")
 
         try:
-            self.transport = transport
-
-            self.pre_login()
+            self._transport = transport
+            self._authenticate()
 
         except Exception as ex:
             exc_type, exc_obj, exc_tb = sys.exc_info()
-
-            _LOGGER.error(f"Failed to handle message, error: {ex}, Line: {exc_tb.tb_lineno}")
+            _LOGGER.error(f"Connection failed, unable to reconnect, error: {ex}, Line: {exc_tb.tb_lineno}")
 
     def data_received(self, data):
         try:
@@ -99,36 +116,26 @@ class DahuaAPI(asyncio.Protocol):
 
             for message in self._extract_messages():
                 try:
-                    _LOGGER.debug(f"Handling message: {message}")
-
-                    message_id = message.get("id")
-
-                    handler: Callable = self.data_handlers.get(message_id, self.handle_default)
-                    handler(message)
-
+                    self._process(message)
                 except Exception as ex:
                     exc_type, exc_obj, exc_tb = sys.exc_info()
-
                     _LOGGER.error(
                         f"Failed to dispatch message, "
                         f"Message: {message}, "
                         f"Error: {ex}, "
                         f"Line: {exc_tb.tb_lineno}"
                     )
-
-                    self._set_message_metrics(METRIC_DAHUA_FAILED_MESSAGES, [self.sessionId, "incoming"])
+                    self._set_message_metrics(MetricType.DAHUA_FAILED_MESSAGES, [self._session_id, "incoming"])
 
         except Exception as ex:
             exc_type, exc_obj, exc_tb = sys.exc_info()
-
             _LOGGER.error(
                 f"Failed to handle message, "
                 f"Data: {data}, "
                 f"Error: {ex}, "
                 f"Line: {exc_tb.tb_lineno}"
             )
-
-            self._set_message_metrics(METRIC_DAHUA_FAILED_MESSAGES, [self.sessionId, "incoming"])
+            self._set_message_metrics(MetricType.DAHUA_FAILED_MESSAGES, [self._session_id, "incoming"])
 
     def _extract_messages(self):
         """Yield complete JSON messages from the rx buffer.
@@ -143,12 +150,9 @@ class DahuaAPI(asyncio.Protocol):
         while True:
             start = self._rx_buffer.find(b'{')
             if start < 0:
-                # No JSON start in buffer - drop everything (binary header
-                # leftovers) and wait for more data.
                 self._rx_buffer.clear()
                 return
 
-            # Drop everything before the JSON start (DHIP header etc.)
             if start > 0:
                 del self._rx_buffer[:start]
 
@@ -182,7 +186,6 @@ class DahuaAPI(asyncio.Protocol):
                         break
 
             if end < 0:
-                # Incomplete JSON - wait for more data
                 return
 
             payload = bytes(self._rx_buffer[:end + 1])
@@ -196,33 +199,7 @@ class DahuaAPI(asyncio.Protocol):
                     f"Data: {payload}, "
                     f"Error: {ex}"
                 )
-                self._set_message_metrics(METRIC_DAHUA_FAILED_MESSAGES, [self.sessionId, "incoming"])
-
-    def handle_notify_event_stream(self, params):
-        try:
-            event_list = params.get("eventList")
-
-            for message in event_list:
-                code = message.get("Code")
-
-                for k in self.dahua_details:
-                    if k in DAHUA_ALLOWED_DETAILS:
-                        message[k] = self.dahua_details.get(k)
-
-                event_data = {
-                    "event": f"{code}/Event",
-                    "payload": message
-                }
-
-                self.outgoing_events.put(event_data)
-
-        except Exception as ex:
-            exc_type, exc_obj, exc_tb = sys.exc_info()
-
-            _LOGGER.error(f"Failed to handle event, error: {ex}, Line: {exc_tb.tb_lineno}")
-
-    def handle_default(self, message):
-        _LOGGER.info(f"Data received without handler: {message}")
+                self._set_message_metrics(MetricType.DAHUA_FAILED_MESSAGES, [self._session_id, "incoming"])
 
     def _cancel_timers(self):
         if self._keep_alive_timer is not None:
@@ -233,8 +210,8 @@ class DahuaAPI(asyncio.Protocol):
             self._login_timeout_timer = None
 
     def _close_transport(self):
-        if self.transport is not None and not self.transport.is_closing():
-            self.transport.close()
+        if self._transport is not None and not self._transport.is_closing():
+            self._transport.close()
 
     def eof_received(self):
         _LOGGER.info('Server sent EOF message')
@@ -250,44 +227,91 @@ class DahuaAPI(asyncio.Protocol):
         self._close_transport()
         self._loop.stop()
 
-    def send(self, action, handler, params=None):
-        if params is None:
-            params = {}
+    def _send(self, endpoint: DahuaRPC, additional_params: dict | None = None):
+        message_data = self._get_message(endpoint, additional_params)
+        self._send_internal(message_data)
 
-        self.request_id += 1
+    def _send_multiple(self, requests: list[dict]):
+        requests_left = copy(requests)
 
-        message_data = {
-            "id": self.request_id,
-            "session": self.sessionId,
-            "magic": "0x1234",
-            "method": action,
+        while len(requests_left) > 0:
+            requests_to_process = requests_left[:MAX_MESSAGES_IN_BULK]
+            requests_left = requests_left[MAX_MESSAGES_IN_BULK:]
+
+            message_data = self._get_messages(requests_to_process)
+            self._send_internal(message_data)
+
+    def _send_internal(self, message_data: dict):
+        _LOGGER.debug(f"Sending message, Data: {message_data}")
+
+        if not self._transport.is_closing():
+            message = convert_message(message_data)
+            self._transport.write(message)
+
+    def _add_listener(self, endpoint: DahuaRPC, params: dict | list):
+        message_id = self._request_id
+
+        self._request_queue[message_id] = {
+            "endpoint": endpoint,
             "params": params
         }
 
-        self._set_message_metrics(METRIC_DAHUA_MESSAGES, [self.sessionId, action])
+        self._set_message_metrics(MetricType.DAHUA_MESSAGES, [self._session_id, endpoint])
 
-        self.data_handlers[self.request_id] = handler
+    def _get_messages(self, requests: list[dict]) -> dict:
+        params = []
 
-        if not self.transport.is_closing():
-            message = self.convert_message(message_data)
+        for request in requests:
+            endpoint_name = request.get("name")
+            request_params: dict | None = request.get("params")
 
-            self.transport.write(message)
+            endpoint = DahuaRPC(endpoint_name)
+            message = self._get_message(endpoint, request_params)
+            params.append(message)
 
-    @staticmethod
-    def convert_message(data):
-        message_data = json.dumps(data, indent=4)
+        self._request_id += 1
 
-        header = struct.pack(">L", 0x20000000)
-        header += struct.pack(">L", 0x44484950)
-        header += struct.pack(">d", 0)
-        header += struct.pack("<L", len(message_data))
-        header += struct.pack("<L", 0)
-        header += struct.pack("<L", len(message_data))
-        header += struct.pack("<L", 0)
+        message_data = {
+            "id": self._request_id,
+            "session": self._session_id,
+            "method": str(DahuaRPC.SYSTEM_MULTI_CALL),
+            "params": params
+        }
 
-        message = header + message_data.encode("utf-8")
+        self._add_listener(DahuaRPC.SYSTEM_MULTI_CALL, params)
 
-        return message
+        return message_data
+
+    def _get_message(self, endpoint: DahuaRPC, additional_params: dict | None = None) -> dict:
+        params = {}
+
+        if endpoint in self._rpc_endpoints:
+            endpoint_config = self._rpc_endpoints[endpoint]
+            endpoint_params = endpoint_config.get("overrideParams")
+
+            if endpoint_params is not None:
+                params = copy(endpoint_params)
+
+        if additional_params is not None:
+            params.update(additional_params)
+
+        self._request_id += 1
+
+        message_data = {
+            "id": self._request_id,
+            "session": self._session_id,
+            "magic": "0x1234",
+            "method": str(endpoint),
+            "params": params
+        }
+
+        if endpoint in self._message_extenders:
+            extend_data = self._message_extenders.get(endpoint)
+            extend_data(message_data)
+
+        self._add_listener(endpoint, params)
+
+        return message_data
 
     def _on_login_timeout(self):
         _LOGGER.error(f"Login did not complete within {LOGIN_TIMEOUT_SECONDS}s, forcing disconnect")
@@ -295,231 +319,340 @@ class DahuaAPI(asyncio.Protocol):
         self._close_transport()
         self._loop.stop()
 
-    def pre_login(self):
-        _LOGGER.debug("Prepare pre-login message")
+    def _authenticate(self):
+        _LOGGER.debug("Prepare login message")
 
-        # Start login timeout - if login doesn't finish in time, tear down
-        self._login_timeout_timer = Timer(LOGIN_TIMEOUT_SECONDS, self._on_login_timeout)
-        self._login_timeout_timer.daemon = True
-        self._login_timeout_timer.start()
+        # Start login timeout on first auth attempt
+        if self._session_password is None:
+            self._login_timeout_timer = Timer(LOGIN_TIMEOUT_SECONDS, self._on_login_timeout)
+            self._login_timeout_timer.daemon = True
+            self._login_timeout_timer.start()
 
-        def handle_pre_login(message):
-            error = message.get("error")
+        additional_params = {
+            "userName": self._device.username
+        }
+
+        if self._session_password is not None:
+            additional_params["password"] = self._session_password
+            additional_params["authorityType"] = "Default"
+
+        self._send(DahuaRPC.LOGIN, additional_params)
+
+    def _process(self, message):
+        try:
+            if message is not None:
+                message_id = message.get("id")
+                method = message.get("method")
+
+                if message_id in self._request_queue:
+                    request_data = self._request_queue.get(message_id)
+                    endpoint = request_data.get("endpoint")
+
+                    _LOGGER.debug(f"Processing message #{message_id}, Endpoint: {endpoint}, Message: {message}")
+
+                    rpc_handler = self._rpc_handlers.get(endpoint)
+
+                    if rpc_handler is not None:
+                        rpc_handler(message)
+
+                    del self._request_queue[message_id]
+
+                elif method == DahuaRPC.EVENT_STREAM:
+                    rpc_handler = self._rpc_handlers.get(method)
+
+                    if rpc_handler is not None:
+                        rpc_handler(message)
+                else:
+                    _LOGGER.warning(
+                        f"Cannot process message #{message_id}, "
+                        f"No handler registered, Message: {message}"
+                    )
+
+                _LOGGER.debug(f"Message #{message_id} handled")
+
+        except Exception as ex:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            _LOGGER.error(
+                f"Failed to process message, "
+                f"Data: {message}, "
+                f"Error: {ex}, "
+                f"Line: {exc_tb.tb_lineno}"
+            )
+
+    def _handle_authenticate(self, message):
+        try:
+            error = message.get("error", {})
             params = message.get("params")
 
-            if error is not None:
+            if self._session_password is None:
                 error_message = error.get("message")
 
                 if error_message == "Component error: login challenge!":
-                    self.random = params.get("random")
-                    self.realm = params.get("realm")
-                    self.sessionId = message.get("session")
+                    self._random = params.get("random")
+                    self._realm = params.get("realm")
+                    self._session_id = message.get("session")
 
-                    self.login()
+                    self._session_password = get_hashed_password(
+                        self._random,
+                        self._realm,
+                        self._device.username,
+                        self._device.password
+                    )
 
-        request_data = {
-            "clientType": "",
-            "ipAddr": "(null)",
-            "loginType": "Direct",
-            "userName": self.dahua_config.username,
-            "password": ""
+                    self._authenticate()
+
+            else:
+                keep_alive_interval = params.get("keepAliveInterval")
+
+                if keep_alive_interval is not None:
+                    # Login succeeded - cancel login timeout
+                    if self._login_timeout_timer is not None:
+                        self._login_timeout_timer.cancel()
+                        self._login_timeout_timer = None
+
+                    self._set_status(True)
+                    self._keep_alive_interval = keep_alive_interval - 5
+
+                    self._handle_keep_alive()
+                    self._load_device()
+
+        except Exception as ex:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            _LOGGER.error(
+                f"Failed to authenticate, "
+                f"Data: {message}, "
+                f"Error: {ex}, "
+                f"Line: {exc_tb.tb_lineno}"
+            )
+
+    def _extend_access_control_message(self, message_data: dict) -> None:
+        if self._device.access_control_token is not None:
+            message_data["object"] = self._device.access_control_token
+
+    def _load_device(self):
+        try:
+            endpoints = {
+                endpoint: self._rpc_endpoints[endpoint]
+                for endpoint in self._rpc_endpoints
+                if self._rpc_endpoints[endpoint].get("isDeviceDetails", False)
+            }
+
+            for endpoint in endpoints:
+                endpoint_config = endpoints[endpoint]
+                params = endpoint_config.get("overrideParams")
+
+                if endpoint_config is not None:
+                    sub_params = endpoint_config.get("subParams")
+
+                    if sub_params is None:
+                        self._send(endpoint, params)
+                    else:
+                        if MAX_MESSAGES_IN_BULK > 1:
+                            requests = []
+                            for method_data_item in sub_params:
+                                item_params = copy(params) if params else {}
+                                item_params.update(method_data_item)
+                                request = {
+                                    "name": endpoint,
+                                    "params": item_params
+                                }
+                                requests.append(request)
+                            self._send_multiple(requests)
+                        else:
+                            for method_data_item in sub_params:
+                                item_params = copy(params) if params else {}
+                                item_params.update(method_data_item)
+                                self._send(endpoint, item_params)
+
+        except Exception as ex:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            _LOGGER.error(
+                f"Failed to load device, "
+                f"Error: {ex}, "
+                f"Line: {exc_tb.tb_lineno}"
+            )
+
+    def _process_multiple(self, message):
+        try:
+            message_params = message.get("params")
+
+            for message_item in message_params:
+                self._process(message_item)
+
+        except Exception as ex:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            _LOGGER.error(
+                f"Failed to handle multiple messages, "
+                f"Data: {message}, "
+                f"Error: {ex}, "
+                f"Line: {exc_tb.tb_lineno}"
+            )
+
+    def _handle_config_data(self, message):
+        try:
+            error = message.get("error")
+
+            if error is None:
+                message_id = message.get("id")
+                request_data = self._request_queue.get(message_id)
+
+                endpoint_name = request_data.get("endpoint")
+                request_params = request_data.get("params")
+                sub_param = request_params.get("name")
+
+                endpoint = DahuaRPC(endpoint_name)
+                params = message.get("params")
+
+                self._update_device(endpoint, params, sub_param)
+
+        except Exception as ex:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            _LOGGER.error(
+                f"Failed to handle configuration data, "
+                f"Data: {message}, "
+                f"Error: {ex}, "
+                f"Line: {exc_tb.tb_lineno}"
+            )
+
+    def _handle_generic_config_data(self, message):
+        try:
+            message_id = message.get("id")
+            request_data = self._request_queue.get(message_id)
+
+            endpoint_name = request_data.get("endpoint")
+            endpoint = DahuaRPC(endpoint_name)
+
+            error = message.get("error")
+
+            if error is None:
+                params = message.get("params")
+
+                if endpoint == DahuaRPC.ACCESS_CONTROL_FACTORY_INSTANCE:
+                    params = {
+                        "instance": message.get("result")
+                    }
+
+                self._update_device(endpoint, params)
+
+        except Exception as ex:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            _LOGGER.error(
+                f"Failed to handle generic configuration data, "
+                f"Data: {message}, "
+                f"Error: {ex}, "
+                f"Line: {exc_tb.tb_lineno}"
+            )
+
+    def _update_device(self, endpoint: DahuaRPC, data: dict | str, sub_param: str | None = None):
+        self._device.update(endpoint, data, sub_param)
+
+        event = endpoint if sub_param is None else f"{endpoint}/{sub_param}"
+        self._publish_outgoing_event(f"Device/{event}", data)
+
+    def _publish_pending_events(self):
+        for item in self._pending_delivery_items:
+            event = item.get("event")
+            payload = item.get("payload")
+            self._publish_outgoing_event(event, payload)
+
+        self._pending_delivery_items.clear()
+
+    def _publish_outgoing_event(self, event: str, payload: dict):
+        if not self._can_publish:
+            if None in [self._device.type, self._device.serial_number]:
+                self._pending_delivery_items.append({
+                    "event": event,
+                    "payload": payload
+                })
+                return
+            else:
+                self._can_publish = True
+                self._publish_pending_events()
+
+        payload[DAHUA_DEVICE_TYPE] = self._device.type
+        payload[DAHUA_SERIAL_NUMBER] = self._device.serial_number
+
+        event_data = {
+            "event": event,
+            "payload": payload
         }
 
-        self.send(DAHUA_GLOBAL_LOGIN, handle_pre_login, request_data)
+        self._outgoing_events.put(event_data)
 
-    def login(self):
-        _LOGGER.debug("Prepare login message")
-
-        def handle_login(message):
-            params = message.get("params")
-            keep_alive_interval = params.get("keepAliveInterval")
-
-            if keep_alive_interval is not None:
-                # Login succeeded - cancel login timeout
-                if self._login_timeout_timer is not None:
-                    self._login_timeout_timer.cancel()
-                    self._login_timeout_timer = None
-
-                self._set_status(True)
-
-                self.keep_alive_interval = keep_alive_interval - 5
-
-                self.load_access_control()
-                self.load_version()
-                self.load_serial_number()
-                self.load_device_type()
-                self.attach_event_manager()
-
-                self._keep_alive_timer = Timer(self.keep_alive_interval, self.keep_alive)
-                self._keep_alive_timer.daemon = True
-                self._keep_alive_timer.start()
-
-        password = get_hashed_password(
-            self.random,
-            self.realm,
-            self.dahua_config.username,
-            self.dahua_config.password
-        )
-
-        request_data = {
-            "clientType": "",
-            "ipAddr": "(null)",
-            "loginType": "Direct",
-            "userName": self.dahua_config.username,
-            "password": password,
-            "authorityType": "Default"
-        }
-
-        self.send(DAHUA_GLOBAL_LOGIN, handle_login, request_data)
-
-    def attach_event_manager(self):
-        _LOGGER.info("Attach event manager")
-
-        def handle_attach_event_manager(message):
+    def _handle_attach_event_manager(self, message):
+        try:
             method = message.get("method")
             params = message.get("params")
 
-            if method == "client.notifyEventStream":
-                self.handle_notify_event_stream(params)
+            if method == DahuaRPC.EVENT_STREAM:
+                event_list = params.get("eventList")
 
-        request_data = {
-            "codes": ['All']
-        }
+                for event_message in event_list:
+                    code = event_message.get("Code")
+                    self._publish_outgoing_event(f"{code}/Event", event_message)
 
-        self.send(DAHUA_EVENT_MANAGER_ATTACH, handle_attach_event_manager, request_data)
+        except Exception as ex:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            _LOGGER.error(f"Failed to handle event, error: {ex}, Line: {exc_tb.tb_lineno}")
 
-    def load_access_control(self):
-        _LOGGER.info("Get access control configuration")
-
-        def handle_access_control(message):
-            params = message.get("params")
-            table = params.get("table")
-
-            for item in table:
-                access_control = item.get('AccessProtocol')
-
-                if access_control == 'Local':
-                    self.hold_time = item.get('UnlockReloadInterval')
-
-                    _LOGGER.info(f"Hold time: {self.hold_time}")
-
-        request_data = {
-            "name": "AccessControl"
-        }
-
-        self.send(DAHUA_CONFIG_MANAGER_GETCONFIG, handle_access_control, request_data)
-
-    def load_version(self):
-        _LOGGER.info("Get version")
-
-        def handle_version(message):
-            params = message.get("params")
-            version_details = params.get("version", {})
-            build_date = version_details.get("BuildDate")
-            version = version_details.get("Version")
-
-            self.dahua_details[DAHUA_VERSION] = version
-            self.dahua_details[DAHUA_BUILD_DATE] = build_date
-
-            _LOGGER.info(f"Version: {version}, Build Date: {build_date}")
-
-        self.send(DAHUA_MAGICBOX_GETSOFTWAREVERSION, handle_version)
-
-    def load_device_type(self):
-        _LOGGER.info("Get device type")
-
-        def handle_device_type(message):
-            params = message.get("params")
-            device_type = params.get("type")
-
-            self.dahua_details[DAHUA_DEVICE_TYPE] = device_type
-
-            _LOGGER.info(f"Device Type: {device_type}")
-
-        self.send(DAHUA_MAGICBOX_GETDEVICETYPE, handle_device_type)
-
-    def load_serial_number(self):
-        _LOGGER.info("Get serial number")
-
-        def handle_serial_number(message):
-            params = message.get("params")
-            table = params.get("table", {})
-            serial_number = table.get("UUID")
-
-            self.dahua_details[DAHUA_SERIAL_NUMBER] = serial_number
-
-            _LOGGER.info(f"Serial Number: {serial_number}")
-
-        request_data = {
-            "name": "T2UServer"
-        }
-
-        self.send(DAHUA_CONFIG_MANAGER_GETCONFIG, handle_serial_number, request_data)
-
-    def keep_alive(self):
+    def _keep_alive(self):
         _LOGGER.debug("Keep alive")
 
-        def handle_keep_alive(message):
-            self._keep_alive_timer = Timer(self.keep_alive_interval, self.keep_alive)
-            self._keep_alive_timer.daemon = True
-            self._keep_alive_timer.start()
-
-        request_data = {
-            "timeout": self.keep_alive_interval,
+        additional_params = {
+            "timeout": self._keep_alive_interval,
             "action": True
         }
 
-        self.send(DAHUA_GLOBAL_KEEPALIVE, handle_keep_alive, request_data)
+        self._send(DahuaRPC.KEEPALIVE, additional_params)
 
-    def run_cmd_mute(self, payload: dict):
-        _LOGGER.debug("Keep alive")
+    def _handle_keep_alive(self, _message=None):
+        _LOGGER.debug(f"Set timer for {self._keep_alive_interval} seconds to trigger keep alive message")
 
-        def handle_run_cmd_mute(message):
-            _LOGGER.info("Call was muted")
+        self._keep_alive_timer = Timer(self._keep_alive_interval, self._keep_alive)
+        self._keep_alive_timer.daemon = True
+        self._keep_alive_timer.start()
+
+    def _run_cmd_mute(self, _payload: dict):
+        _LOGGER.debug("Mute call")
 
         request_data = {
             "command": "hc"
         }
 
-        self.send(DAHUA_CONSOLE_RUN_CMD, handle_run_cmd_mute, request_data)
+        self._send(DahuaRPC.CONSOLE_RUN_CMD, request_data)
 
-    def access_control_open_door(self, payload: dict):
+    def _access_control_open_door(self, payload: dict):
         door_id = payload.get("Door", 1)
 
-        is_locked = self.lock_status.get(door_id, False)
+        is_locked = self._device.is_locked(door_id)
         should_unlock = False
 
         try:
             if is_locked:
                 _LOGGER.info(f"Access Control - Door #{door_id} is already unlocked, ignoring request")
-
             else:
                 is_locked = True
                 should_unlock = True
 
-                self.lock_status[door_id] = is_locked
-                self.publish_lock_state(door_id, False)
+                self._device.set_lock(door_id, is_locked)
+                self._publish_lock_state(door_id, False)
 
-                url = f"{self.dahua_config.base_url}{ENDPOINT_ACCESS_CONTROL}{door_id}"
+                request_data = {
+                    "DoorIndex": door_id,
+                    "Type": "",
+                    "UserID": "",
+                }
 
-                response = requests.get(url, verify=False, auth=self.dahua_config.auth)
-
-                response.raise_for_status()
+                self._send(DahuaRPC.OPEN_DOOR, request_data)
 
         except Exception as ex:
             exc_type, exc_obj, exc_tb = sys.exc_info()
-
             _LOGGER.error(f"Failed to open door, error: {ex}, Line: {exc_tb.tb_lineno}")
 
         if should_unlock and is_locked:
-            Timer(float(self.hold_time), self.magnetic_unlock, (self, door_id)).start()
+            Timer(self._device.hold_time, self._magnetic_unlock, (self, door_id)).start()
 
-    @staticmethod
-    def magnetic_unlock(self, door_id):
-        self.lock_status[door_id] = False
-        self.publish_lock_state(door_id, True)
-
-    def publish_lock_state(self, door_id: int, is_locked: bool):
+    def _publish_lock_state(self, door_id: int, is_locked: bool):
         state = "Locked" if is_locked else "Unlocked"
 
         _LOGGER.info(f"Access Control - {state} magnetic lock #{door_id}")
@@ -529,9 +662,9 @@ class DahuaAPI(asyncio.Protocol):
             "isLocked": is_locked
         }
 
-        event_data = {
-            "event": "MagneticLock/Status",
-            "payload": message
-        }
+        self._publish_outgoing_event("MagneticLock/Status", message)
 
-        self.outgoing_events.put(event_data)
+    @staticmethod
+    def _magnetic_unlock(self, door_id):
+        self._device.set_lock(door_id, False)
+        self._publish_lock_state(door_id, True)

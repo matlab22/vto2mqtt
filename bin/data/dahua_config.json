@@ -1,0 +1,47 @@
+{
+  "endpoints": {
+    "magicBox.getSerialNo": {
+      "isDeviceDetails": true
+    },
+    "accessControl.factory.instance": {
+      "isDeviceDetails": true,
+      "overrideParams": {
+        "Channel": 0
+      }
+    },
+    "magicBox.getDeviceType": {
+      "isDeviceDetails": true
+    },
+    "magicBox.getSoftwareVersion": {
+      "isDeviceDetails": true
+    },
+    "magicBox.getSystemInfoNew": {
+      "isDeviceDetails": true
+    },
+    "configManager.getConfig": {
+      "isDeviceDetails": true,
+      "overrideParams": {
+        "name": null
+      },
+      "subParams": [
+        {"name": "AccessControl"},
+        {"name": "T2UServer"}
+      ]
+    },
+    "eventManager.attach": {
+      "isDeviceDetails": true,
+      "overrideParams": {
+        "codes": ["All"]
+      }
+    },
+    "global.login": {
+      "overrideParams": {
+        "clientType": "",
+        "ipAddr": "(null)",
+        "loginType": "Direct",
+        "userName": "",
+        "password": ""
+      }
+    }
+  }
+}

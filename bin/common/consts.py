@@ -8,24 +8,18 @@ PROTOCOLS = {
 
 DAHUA_DEVICE_TYPE = "deviceType"
 DAHUA_SERIAL_NUMBER = "serialNumber"
-DAHUA_VERSION = "version"
-DAHUA_BUILD_DATE = "buildDate"
 
-DAHUA_CONSOLE_RUN_CMD = "console.runCmd"
-DAHUA_GLOBAL_LOGIN = "global.login"
-DAHUA_GLOBAL_KEEPALIVE = "global.keepAlive"
-DAHUA_EVENT_MANAGER_ATTACH = "eventManager.attach"
-DAHUA_CONFIG_MANAGER_GETCONFIG = "configManager.getConfig"
-DAHUA_MAGICBOX_GETSOFTWAREVERSION = "magicBox.getSoftwareVersion"
-DAHUA_MAGICBOX_GETDEVICETYPE = "magicBox.getDeviceType"
+TOPIC_COMMAND = "/Command"
 
-DAHUA_ALLOWED_DETAILS = [
-    DAHUA_DEVICE_TYPE,
-    DAHUA_SERIAL_NUMBER
-]
+MAX_MESSAGES_IN_BULK = 10
 
-ENDPOINT_ACCESS_CONTROL = "accessControl.cgi?action=openDoor&UserID=101&Type=Remote&channel="
-ENDPOINT_MAGICBOX_SYSINFO = "magicBox.cgi?action=getSystemInfo"
+PLACE_HOLDERS = ["{\"id\"", "{\"error\""]
+UNICODE_APOSTROPHES = ["\u201c", "\u201d"]
+
+CONCAT_ACTION_MESSAGE = {
+    True: "Last chunk of opened stream",
+    False: "Partial"
+}
 
 MQTT_ERROR_DEFAULT_MESSAGE = "Unknown error"
 
@@ -47,12 +41,6 @@ MQTT_ERROR_MESSAGES = {
     14: "Error defined by errno",
     15: "Queue size",
 }
-
-TOPIC_COMMAND = "/Command"
-TOPIC_DOOR = "Open"
-TOPIC_MUTE = "Mute"
-
-JSON_START_PATTERN = "{\""
 
 CLIENT_DAHUA = "Dahua"
 CLIENT_MQTT = "MQTT"
