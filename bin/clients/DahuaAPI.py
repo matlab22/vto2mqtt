@@ -221,7 +221,7 @@ class DahuaAPI(asyncio.Protocol):
         self._loop.stop()
 
     def connection_lost(self, exc):
-        _LOGGER.error(f'Server closed the connection, exc: {exc}')
+        _LOGGER.warning(f'Server closed the connection, exc: {exc}')
 
         self._cancel_timers()
         self._close_transport()
@@ -605,12 +605,27 @@ class DahuaAPI(asyncio.Protocol):
 
         self._send(DahuaRPC.KEEPALIVE, additional_params)
 
-    def _handle_keep_alive(self, _message=None):
-        _LOGGER.debug(f"Set timer for {self._keep_alive_interval} seconds to trigger keep alive message")
+        # Always reschedule the next keep-alive independently of the response.
+        # This prevents the chain from breaking if a response is lost.
+        self._schedule_keep_alive()
+
+    def _schedule_keep_alive(self):
+        if self._keep_alive_timer is not None:
+            self._keep_alive_timer.cancel()
+
+        _LOGGER.debug(f"Scheduling next keep-alive in {self._keep_alive_interval}s")
 
         self._keep_alive_timer = Timer(self._keep_alive_interval, self._keep_alive)
         self._keep_alive_timer.daemon = True
         self._keep_alive_timer.start()
+
+    def _handle_keep_alive(self, _message=None):
+        if _message is None:
+            # Initial call after login starts the keep-alive cycle.
+            _LOGGER.debug(f"Starting keep-alive cycle, interval: {self._keep_alive_interval}s")
+            self._schedule_keep_alive()
+        else:
+            _LOGGER.debug("Keep-alive response received")
 
     def _run_cmd_mute(self, _payload: dict):
         _LOGGER.debug("Mute call")
