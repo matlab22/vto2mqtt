@@ -4,6 +4,7 @@ from copy import copy
 import json
 import logging
 import queue
+import struct
 import sys
 from threading import Timer
 from typing import Optional
@@ -140,63 +141,106 @@ class DahuaAPI(asyncio.Protocol):
     def _extract_messages(self):
         """Yield complete JSON messages from the rx buffer.
 
-        Dahua DHIP wraps each JSON payload in a 32-byte binary header,
-        but TCP can split a single payload across multiple ``data_received``
-        calls. Rather than trusting the header's length field (which varies
-        between firmwares), we scan the buffer for balanced top-level JSON
-        objects and yield each one as it becomes complete. Anything before
-        the next ``{`` (DHIP header bytes, etc.) is discarded.
+        Dahua DHIP wraps each JSON payload in a 32-byte binary header.
+        We locate headers by their 8-byte magic signature and use the
+        payload length field to extract the exact JSON content, avoiding
+        issues where binary header bytes (e.g. sequence numbers) happen
+        to contain 0x7B ('{') or 0x7D ('}').
         """
+        DHIP_MAGIC = b'\x20\x00\x00\x00DHIP'
+        DHIP_HEADER_SIZE = 32
+
         while True:
-            start = self._rx_buffer.find(b'{')
-            if start < 0:
-                self._rx_buffer.clear()
+            if len(self._rx_buffer) == 0:
                 return
 
-            if start > 0:
-                del self._rx_buffer[:start]
+            # Look for the DHIP header magic signature
+            magic_pos = self._rx_buffer.find(DHIP_MAGIC)
 
-            depth = 0
-            in_string = False
-            escape = False
-            end = -1
+            if magic_pos < 0:
+                # No DHIP header found — try to find raw JSON as fallback
+                # (some firmware versions may send headerless responses)
+                json_start = self._rx_buffer.find(b'{"')
+                if json_start < 0:
+                    self._rx_buffer.clear()
+                    return
 
-            for i, b in enumerate(self._rx_buffer):
-                ch = chr(b)
+                if json_start > 0:
+                    del self._rx_buffer[:json_start]
 
-                if escape:
-                    escape = False
-                    continue
+                # Use brace-scanning for headerless JSON
+                depth = 0
+                in_string = False
+                escape = False
+                end = -1
 
-                if in_string:
-                    if ch == '\\':
-                        escape = True
-                    elif ch == '"':
-                        in_string = False
-                    continue
+                for i, b in enumerate(self._rx_buffer):
+                    ch = chr(b)
 
-                if ch == '"':
-                    in_string = True
-                elif ch == '{':
-                    depth += 1
-                elif ch == '}':
-                    depth -= 1
-                    if depth == 0:
-                        end = i
-                        break
+                    if escape:
+                        escape = False
+                        continue
 
-            if end < 0:
+                    if in_string:
+                        if ch == '\\':
+                            escape = True
+                        elif ch == '"':
+                            in_string = False
+                        continue
+
+                    if ch == '"':
+                        in_string = True
+                    elif ch == '{':
+                        depth += 1
+                    elif ch == '}':
+                        depth -= 1
+                        if depth == 0:
+                            end = i
+                            break
+
+                if end < 0:
+                    return
+
+                payload = bytes(self._rx_buffer[:end + 1])
+                del self._rx_buffer[:end + 1]
+
+                try:
+                    yield json.loads(payload.decode('utf-8', errors='replace'))
+                except Exception as ex:
+                    _LOGGER.error(
+                        f"Failed to parse JSON message (fallback), "
+                        f"Data: {payload[:200]}, "
+                        f"Error: {ex}"
+                    )
+                    self._set_message_metrics(MetricType.DAHUA_FAILED_MESSAGES, [self._session_id, "incoming"])
+                continue
+
+            # Discard any bytes before the header (e.g. trailing newlines)
+            if magic_pos > 0:
+                del self._rx_buffer[:magic_pos]
+
+            # Need at least a complete header
+            if len(self._rx_buffer) < DHIP_HEADER_SIZE:
                 return
 
-            payload = bytes(self._rx_buffer[:end + 1])
-            del self._rx_buffer[:end + 1]
+            # Read payload length from header offset 16 (little-endian u32)
+            payload_length = struct.unpack_from('<I', self._rx_buffer, 16)[0]
+            total_length = DHIP_HEADER_SIZE + payload_length
+
+            # Wait for the complete frame (header + payload)
+            if len(self._rx_buffer) < total_length:
+                return
+
+            # Extract the JSON payload (skip the 32-byte header)
+            payload = bytes(self._rx_buffer[DHIP_HEADER_SIZE:total_length])
+            del self._rx_buffer[:total_length]
 
             try:
                 yield json.loads(payload.decode('utf-8', errors='replace'))
             except Exception as ex:
                 _LOGGER.error(
                     f"Failed to parse JSON message, "
-                    f"Data: {payload}, "
+                    f"Data: {payload[:200]}, "
                     f"Error: {ex}"
                 )
                 self._set_message_metrics(MetricType.DAHUA_FAILED_MESSAGES, [self._session_id, "incoming"])
